@@ -30,20 +30,14 @@ class SampahController:
         return await self.sampah_repository.get_all_user_sampah(user.id)
 
     async def get_sampah_detail(self, token: TokenData, sampah_id: int):
-        user = await self.user_repository.find_user_by_username(token.name)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        data = await self.sampah_repository.get_sampah_detail(sampah_id, user.id)
+        data = await self.sampah_repository.get_sampah_detail(sampah_id)
         if data is None:
             raise HTTPException(status_code=404, detail="Sampah not found")
         data.image = get_image_from_image_path(data.image)
         return data
 
     async def get_all_sampah(self, token: TokenData):
-        data = await self.sampah_repository.get_all_sampah()
-        for item in data:
-            item.image = get_image_from_image_path(item.image)
-        return data
+        return await self.sampah_repository.get_all_sampah()
 
     async def store_image(self, file):
         filename = insert_image_to_local(file, folder="garbage_image")
@@ -84,7 +78,4 @@ class SampahController:
     async def get_sampah_timeseries(
         self, token: TokenData, start_date: datetime, end_date: datetime
     ):
-        data = await self.sampah_repository.get_sampah_timeseries(start_date, end_date)
-        for item in data:
-            item.image = get_image_from_image_path(item.image)
-        return data
+        return await self.sampah_repository.get_sampah_timeseries(start_date, end_date)

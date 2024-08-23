@@ -45,7 +45,18 @@ class OutputSampah(BaseModel):
 class OutputSampahDetail(BaseModel):
     address: str
     geom: str
+    captureTime: datetime.datetime
+    point: int
+    total_sampah: int
+    sampah_items: List[OutputSampahItem]
+    count_items: List[CountObject]
     image: str
+
+
+class OutputSampahMaps(BaseModel):
+    id: int
+    address: str
+    geom: str
     captureTime: datetime.datetime
     point: int
     total_sampah: int

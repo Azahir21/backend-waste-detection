@@ -13,6 +13,7 @@ from config.schemas.sampah_schema import (
     OutputSampah,
     OutputSampahDetail,
     OutputSampahItem,
+    OutputSampahMaps,
 )
 from src.repositories.repository_point import PointRepository
 
@@ -53,6 +54,12 @@ class SampahRepository:
                 self.db.add(new_sampah_item)
                 self.db.commit()
                 self.db.refresh(new_sampah_item)
+            # algoritma badge
+            # ambil data poin minimum badge
+            # bandingkan dengan poin user sekarang dengan poin minimum badge dan badge user sekarang
+            # apabila masih belum melebihi poin minimum badge maka tidak ada badge yang diberikan
+            # apabila sudah melebihi poin minimum badge maka badge user akan diperbarui dengan badge yang lebih tinggi
+
             await self.point_repository.update_user_point(user_id, input_sampah.point)
             return new_sampah
         except SQLAlchemyError:
@@ -97,16 +104,12 @@ class SampahRepository:
                 count_objects = self.calculate_objects(sampah_items_list)
 
                 data.append(
-                    OutputSampahDetail(
+                    OutputSampahMaps(
                         id=sampah.id,
-                        userId=sampah.userId,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
-                        image=sampah.imagePath,
                         captureTime=sampah.captureTime,
                         point=sampah.point,
-                        createdAt=sampah.createdAt,
-                        updatedAt=sampah.updatedAt,
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,
                         count_items=count_objects,
@@ -118,12 +121,11 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_sampah_detail(self, sampah_id: int, user_id: int):
+    async def get_sampah_detail(self, sampah_id: int):
         try:
             # Fetch the Sampah object with related SampahItems and JenisSampah
             sampah = (
                 self.db.query(sampah_model.Sampah)
-                .filter(sampah_model.Sampah.userId == user_id)
                 .filter(sampah_model.Sampah.id == sampah_id)
                 .options(
                     joinedload(sampah_model.Sampah.sampah_items).joinedload(
@@ -195,16 +197,12 @@ class SampahRepository:
                 count_objects = self.calculate_objects(sampah_items_list)
 
                 data.append(
-                    OutputSampahDetail(
+                    OutputSampahMaps(
                         id=sampah.id,
-                        userId=sampah.userId,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
-                        image=sampah.imagePath,
                         captureTime=sampah.captureTime,
                         point=sampah.point,
-                        createdAt=sampah.createdAt,
-                        updatedAt=sampah.updatedAt,
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,
                         count_items=count_objects,

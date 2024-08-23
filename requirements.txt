@@ -10,3 +10,4 @@ python-jose[cryptography]
 pydantic-extra-types
 geoalchemy2[shapely]
 geopy
+pillow

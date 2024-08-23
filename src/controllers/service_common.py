@@ -1,5 +1,7 @@
 import base64
 import os
+import io
+from PIL import Image
 from typing_extensions import Annotated
 from fastapi import Depends, HTTPException, UploadFile, logger
 from fastapi.security import OAuth2PasswordBearer
@@ -57,15 +59,32 @@ def get_image_from_image_path(image_path: str) -> str:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
 
-def save_image_base64_to_local(image_data: str, filename: str, folder: str = "default"):
+# def save_image_base64_to_local(image_data: str, filename: str, folder: str = "default"):
+#     try:
+#         decoded_image = base64.b64decode(image_data)
+#         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+#         filename = f"{timestamp}_{filename}.jpg"
+#         with open(f"assets/{folder}/{filename}", "wb") as f:
+#             f.write(decoded_image)
+#         return f"assets/{folder}/{filename}"
+#     except Exception as e:
+#         print(e)
+#         return {"message": "There was an error saving the image"}
+
+
+def save_image_base64_to_local(
+    image_data: str, filename: str, folder: str = "default", quality: int = 85
+):
     try:
         decoded_image = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(decoded_image))
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"{timestamp}_{filename}.jpg"
-        with open(f"assets/{folder}/{filename}", "wb") as f:
-            f.write(decoded_image)
-        return f"assets/{folder}/{filename}"
+        output_path = f"assets/{folder}/{filename}"
+        image.save(
+            output_path, "JPEG", quality=quality, optimize=True, progressive=True
+        )
+        return output_path
     except Exception as e:
         print(e)
         return {"message": "There was an error saving the image"}
-    return filename
