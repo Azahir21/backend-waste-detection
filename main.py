@@ -1,5 +1,6 @@
 from typing import Union
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from config.database import engine
 from src.routers.router_auth import auth_router
 from src.routers.router_article import article_router
@@ -23,6 +24,17 @@ jenis_sampah_model.Base.metadata.create_all(bind=engine)
 point_model.Base.metadata.create_all(bind=engine)
 sampah_model.Base.metadata.create_all(bind=engine)
 sampah_item_model.Base.metadata.create_all(bind=engine)
+
+app.mount(
+    "/garbage-image",
+    StaticFiles(directory="assets/garbage_image"),
+    name="garbage_image",
+)
+app.mount(
+    "/article-image",
+    StaticFiles(directory="assets/article"),
+    name="article_image",
+)
 
 app.include_router(auth_router)
 app.include_router(article_router)
