@@ -21,7 +21,7 @@ class ArticleController:
     def get_articles(self):
         data = self.article_repository.get_all_articles()
         for article in data:
-            article.image = get_image_from_image_path(article.image)
+            article.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/article-image/{article.image.split('/')[-1]}"
         return data
 
     def get_article_by_title(self, article_title: str):

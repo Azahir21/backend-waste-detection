@@ -6,7 +6,6 @@ from geoalchemy2.shape import to_shape
 from config.schemas.common_schema import TokenData
 from config.schemas.sampah_schema import InputSampah
 from src.controllers.service_common import (
-    get_image_from_image_path,
     insert_image_to_local,
     save_image_base64_to_local,
 )
@@ -33,11 +32,14 @@ class SampahController:
         data = await self.sampah_repository.get_sampah_detail(sampah_id)
         if data is None:
             raise HTTPException(status_code=404, detail="Sampah not found")
-        data.image = get_image_from_image_path(data.image)
+        data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
         return data
 
     async def get_all_sampah(self, token: TokenData):
-        return await self.sampah_repository.get_all_sampah()
+        data = await self.sampah_repository.get_all_sampah()
+        for item in data:
+            item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
+        return data
 
     async def store_image(self, file):
         filename = insert_image_to_local(file, folder="garbage_image")
@@ -78,4 +80,7 @@ class SampahController:
     async def get_sampah_timeseries(
         self, token: TokenData, start_date: datetime, end_date: datetime
     ):
-        return await self.sampah_repository.get_sampah_timeseries(start_date, end_date)
+        data = await self.sampah_repository.get_sampah_timeseries(start_date, end_date)
+        for item in data:
+            item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
+        return data

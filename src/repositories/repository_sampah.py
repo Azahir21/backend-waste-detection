@@ -104,7 +104,7 @@ class SampahRepository:
                 count_objects = self.calculate_objects(sampah_items_list)
 
                 data.append(
-                    OutputSampahMaps(
+                    OutputSampahDetail(
                         id=sampah.id,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
@@ -113,6 +113,7 @@ class SampahRepository:
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,
                         count_items=count_objects,
+                        image=sampah.imagePath,
                     )
                 )
 
@@ -147,6 +148,7 @@ class SampahRepository:
             count_objects = self.calculate_objects(sampah_items_list)
 
             return OutputSampahDetail(
+                id=sampah.id,
                 address=sampah.address,
                 geom=to_shape(sampah.geom).wkt,
                 image=sampah.imagePath,
@@ -197,7 +199,7 @@ class SampahRepository:
                 count_objects = self.calculate_objects(sampah_items_list)
 
                 data.append(
-                    OutputSampahMaps(
+                    OutputSampahDetail(
                         id=sampah.id,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
@@ -206,6 +208,7 @@ class SampahRepository:
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,
                         count_items=count_objects,
+                        image=sampah.imagePath,
                     )
                 )
 

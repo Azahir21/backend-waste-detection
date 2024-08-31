@@ -43,6 +43,7 @@ class OutputSampah(BaseModel):
 
 
 class OutputSampahDetail(BaseModel):
+    id: int
     address: str
     geom: str
     captureTime: datetime.datetime
