@@ -4,16 +4,18 @@ from typing import List
 from fastapi import Depends, HTTPException
 from config.database import get_db
 from config.models import sampah_item_model, sampah_model, jenis_sampah_model
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from geoalchemy2.shape import to_shape
+from config.models.badge_model import Badge
+from config.models.point_model import Point
 from config.schemas.sampah_schema import (
     CountObject,
     InputSampah,
     OutputSampah,
     OutputSampahDetail,
     OutputSampahItem,
-    OutputSampahMaps,
 )
 from src.repositories.repository_point import PointRepository
 
@@ -31,6 +33,9 @@ class SampahRepository:
 
     async def insert_new_sampah(self, input_sampah: InputSampah, user_id):
         try:
+            current_time = datetime.now()
+
+            # insert sampah data
             new_sampah = sampah_model.Sampah(
                 userId=user_id,
                 address=input_sampah.address,
@@ -38,12 +43,11 @@ class SampahRepository:
                 geom=f"POINT({input_sampah.longitude} {input_sampah.latitude})",
                 captureTime=input_sampah.capture_date,
                 point=input_sampah.point,
-                createdAt=datetime.now(),
-                updatedAt=datetime.now(),
+                createdAt=current_time,
+                updatedAt=current_time,
             )
             self.db.add(new_sampah)
-            self.db.commit()
-            self.db.refresh(new_sampah)
+
             for sampah_item in input_sampah.sampah_items:
                 new_sampah_item = sampah_item_model.SampahItem(
                     sampahId=new_sampah.id,
@@ -54,18 +58,47 @@ class SampahRepository:
                 self.db.add(new_sampah_item)
                 self.db.commit()
                 self.db.refresh(new_sampah_item)
-            # algoritma badge
-            # ambil data poin minimum badge
-            # bandingkan dengan poin user sekarang dengan poin minimum badge dan badge user sekarang
-            # apabila masih belum melebihi poin minimum badge maka tidak ada badge yang diberikan
-            # apabila sudah melebihi poin minimum badge maka badge user akan diperbarui dengan badge yang lebih tinggi
 
-            await self.point_repository.update_user_point(user_id, input_sampah.point)
-            return new_sampah
-        except SQLAlchemyError:
-            if os.path.exists(input_sampah.imaga_path):
-                os.remove(input_sampah.imaga_path)
-            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+            # Update user point
+            updated_point = await self.point_repository.update_user_point(
+                user_id, input_sampah.point
+            )
+
+            # Query only the badge that meets the user's point criteria (optimized query)
+            user_point = self.db.query(Point).filter(Point.userId == user_id).first()
+            if user_point:
+                new_badge = (
+                    self.db.query(Badge)
+                    .filter(Badge.pointMinimum <= user_point.point)
+                    .order_by(Badge.pointMinimum.desc())
+                    .first()
+                )
+                # Update user's badge if needed
+                if new_badge and (
+                    user_point.badgeId is None or new_badge.id > user_point.badgeId
+                ):
+                    user_point.badgeId = new_badge.id
+                    self.db.commit()
+                    self.db.refresh(user_point)
+                    return {
+                        "detail": "Success Post Sampah",
+                        "badge": new_badge.name,
+                        "updated_badge": True,
+                    }
+
+            return {
+                "detail": "Success Post Sampah",
+                "badge": None,
+                "updated_badge": False,
+            }
+
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            if os.path.exists(input_sampah.image_path):
+                os.remove(input_sampah.image_path)
+            raise HTTPException(
+                status_code=500, detail=f"{self.DATABASE_ERROR_MESSAGE}: {str(e)}"
+            )
 
     async def get_all_user_sampah(self, user_id):
         try:

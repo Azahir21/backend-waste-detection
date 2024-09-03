@@ -27,6 +27,7 @@ class UserRepository:
                 point=0,
                 createdAt=datetime.now(),
                 updatedAt=datetime.now(),
+                badgeId=1,
             )
             self.db.add(init_point)
             self.db.commit()
@@ -55,3 +56,13 @@ class UserRepository:
             return data
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    # async def delete_user(self, id: int):
+    #     try:
+    #         user = (
+    #             self.db.query(user_model.User).filter(user_model.User.id == id).first()
+    #         )
+    #         self.db.delete(user)
+    #         self.db.commit()
+    #     except SQLAlchemyError:
+    #         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)

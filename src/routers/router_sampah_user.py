@@ -47,8 +47,8 @@ async def post_sampah(
     token: TokenData = Depends(get_current_user),
     sampah_controller: SampahController = Depends(),
 ):
-    await sampah_controller.post_sampah(input_sampah, token)
-    return StandardResponse(detail="Success Post Sampah")
+    return await sampah_controller.post_sampah(input_sampah, token)
+    # return StandardResponse(detail="Success Post Sampah")
 
 
 @sampah_user_router.post("/sampah/timeseries")

@@ -23,11 +23,6 @@ async def user_login(
             password=form_data.password,
         )
     )
-    # return OutputLogin(
-    #     access_token=jwt_token.access_token,
-    #     token_type="bearer",
-    #     username=jwt_token.username,
-    # )
 
 
 @auth_router.post("/register")
@@ -44,3 +39,11 @@ async def user_profile(
     user_controller: AuthController = Depends(),
 ):
     return await user_controller.get_current_user(token)
+
+
+# @auth_router.delete("/delete")
+# async def user_delete(
+#     id: int,
+#     user_controller: AuthController = Depends(),
+# ):
+#     return await user_controller.delete_user(id)

@@ -8,6 +8,7 @@ from src.routers.router_point import point_router
 from src.routers.router_sampah_user import sampah_user_router
 from src.routers.router_sampah import sampah_router
 from config.models import (
+    badge_model,
     user_model,
     article_model,
     jenis_sampah_model,
@@ -21,6 +22,7 @@ app = FastAPI(debug=True, swagger_ui_parameters={"deepLinking": False})
 user_model.Base.metadata.create_all(bind=engine)
 article_model.Base.metadata.create_all(bind=engine)
 jenis_sampah_model.Base.metadata.create_all(bind=engine)
+badge_model.Base.metadata.create_all(bind=engine)
 point_model.Base.metadata.create_all(bind=engine)
 sampah_model.Base.metadata.create_all(bind=engine)
 sampah_item_model.Base.metadata.create_all(bind=engine)

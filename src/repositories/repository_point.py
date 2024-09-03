@@ -38,7 +38,8 @@ class PointRepository:
 
     async def get_today_point(self, querying_user_id: int):
         try:
-            specific_date = date(2024, 6, 12)  # Ganti dengan tanggal yang diinginkan
+            # specific_date = date(2024, 6, 12)  # Ganti dengan tanggal yang diinginkan
+            specific_date = date.today()
 
             # Subquery untuk menghitung poin harian
             daily_points_subquery = (

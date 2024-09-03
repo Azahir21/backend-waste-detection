@@ -20,7 +20,11 @@ class PointController:
         if current_user is None:
             raise HTTPException(status_code=404, detail="User not found")
         user_point = await self.point_repository.get_current_user_point(current_user.id)
-        return OutputPoint(point=user_point.point, updatedAt=user_point.updatedAt)
+        return OutputPoint(
+            point=user_point.point,
+            badgeId=user_point.badgeId,
+            updatedAt=user_point.updatedAt,
+        )
 
     async def get_today_point(self, token_data: TokenData):
         current_user = await self.user_repository.find_user_by_username(token_data.name)

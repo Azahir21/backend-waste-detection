@@ -66,3 +66,10 @@ class AuthController:
             return OutputProfile(username=found_user.username, email=found_user.email)
         except Exception as e:
             raise HTTPException(status_code=404, detail="Invalid Token")
+
+    # async def delete_user(self, id: int):
+    #     try:
+    #         await self.user_repository.delete_user(id)
+    #         return {"message": "User Deleted"}
+    #     except Exception as e:
+    #         raise HTTPException(status_code=404, detail="Invalid Token")

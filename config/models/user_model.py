@@ -20,8 +20,12 @@ class User(Base):
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    points = relationship("Point", back_populates="user")
-    sampahs = relationship("Sampah", back_populates="user")
+    points = relationship(
+        "Point", back_populates="user", cascade="all, delete, delete-orphan"
+    )
+    sampahs = relationship(
+        "Sampah", back_populates="user", cascade="all, delete, delete-orphan"
+    )
 
     @validates("email")
     def validate_email(self, key, address):
