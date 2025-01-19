@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey
+from sqlalchemy import Column, String, BigInteger, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import validates, relationship
 from geoalchemy2.types import Geometry
 from datetime import datetime
@@ -21,8 +21,14 @@ class Sampah(Base):
     point = Column(BigInteger, nullable=False)
     createdAt = Column(DateTime, nullable=False, default=datetime.utcnow)
     updatedAt = Column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
+    isGarbagePile = Column(Boolean, nullable=True)
+    isPickup = Column(Boolean, nullable=True)
+    pickupAt = Column(DateTime(timezone=True), nullable=True)
 
     sampah_items = relationship(
         "SampahItem", back_populates="sampah", cascade="all, delete, delete-orphan"
