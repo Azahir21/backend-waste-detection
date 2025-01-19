@@ -153,7 +153,6 @@ class SampahRepository:
                         image=sampah.imagePath,
                     )
                 )
-
             return data
 
         except SQLAlchemyError:

@@ -29,6 +29,7 @@ class Sampah(Base):
     isGarbagePile = Column(Boolean, nullable=True)
     isPickup = Column(Boolean, nullable=True)
     pickupAt = Column(DateTime(timezone=True), nullable=True)
+    pickupByUser = Column(String, nullable=True)
 
     sampah_items = relationship(
         "SampahItem", back_populates="sampah", cascade="all, delete, delete-orphan"

@@ -79,3 +79,29 @@ class RawData(BaseModel):
 class Timeseries(BaseModel):
     start_date: datetime.datetime
     end_date: datetime.datetime
+
+
+class WasteNotCollected(BaseModel):
+    id: int
+    is_waste_pile: bool
+    address: str
+    geom: str
+    captureTime: datetime.datetime
+    waste_count: int
+
+
+class WasteCollected(BaseModel):
+    id: int
+    is_waste_pile: bool
+    address: str
+    geom: str
+    pickupAt: Optional[datetime.datetime]  # Allowing None for pickupAt
+    waste_count: int
+    pickup_by_user: str
+
+
+class StatisticOutput(BaseModel):
+    total_waste_not_collected: int
+    total_waste_collected: int
+    not_collected: List[WasteNotCollected]
+    collected: List[WasteCollected]
