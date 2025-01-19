@@ -57,12 +57,48 @@ class UserRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    # async def delete_user(self, id: int):
-    #     try:
-    #         user = (
-    #             self.db.query(user_model.User).filter(user_model.User.id == id).first()
-    #         )
-    #         self.db.delete(user)
-    #         self.db.commit()
-    #     except SQLAlchemyError:
-    #         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+    async def deactivate_user(self, id: int):
+        try:
+            user = (
+                self.db.query(user_model.User).filter(user_model.User.id == id).first()
+            )
+
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            if user.role == "admin":
+                raise HTTPException(
+                    status_code=403, detail="Admin cannot be deactivated"
+                )
+
+            if user.role == "user":
+                raise HTTPException(
+                    status_code=403, detail="User cannot be deactivated"
+                )
+
+            user.active = not user.active
+            self.db.commit()
+            return user
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def reset_password(self, id: int, password: str):
+        try:
+            user = (
+                self.db.query(user_model.User).filter(user_model.User.id == id).first()
+            )
+
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            user.password = password
+            self.db.commit()
+            return user
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def get_all_user(self):
+        try:
+            return self.db.query(user_model.User).all()
+        except SQLAlchemyError as e:
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)

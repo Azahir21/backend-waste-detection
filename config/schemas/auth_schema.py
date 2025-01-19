@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel, Field
 
 
 class InputUser(BaseModel):
@@ -7,6 +8,8 @@ class InputUser(BaseModel):
     username: str
     email: str
     password: str
+    role: Optional[str] = Field(default="user")
+    active: Optional[bool] = Field(default=True)
 
 
 class InputLogin(BaseModel):
@@ -23,3 +26,12 @@ class OutputLogin(BaseModel):
     access_token: str
     token_type: str
     username: str
+    role: str
+
+
+class OutputAllUser(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    active: bool

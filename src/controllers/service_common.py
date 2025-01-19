@@ -10,12 +10,11 @@ from src.controllers.auth import service_jwt
 from config.schemas.common_schema import TokenData
 import datetime
 
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login", scheme_name="JWT")
+oauth2_scheme_user = OAuth2PasswordBearer(tokenUrl="/api/v1/login", scheme_name="JWT")
 
 
 def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str, Depends(oauth2_scheme_user)],
     service_jwt: service_jwt.JWTService = Depends(),
 ):
     return TokenData.parse_obj(service_jwt.decode_access_token(token))

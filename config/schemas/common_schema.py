@@ -8,3 +8,4 @@ class StandardResponse(BaseModel):
 class TokenData(BaseModel):
     userID: str
     name: str
+    role: str

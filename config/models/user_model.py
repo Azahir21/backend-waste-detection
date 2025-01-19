@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, DateTime
+from sqlalchemy import Column, String, BigInteger, DateTime, Boolean
 from sqlalchemy.orm import validates, relationship
 from datetime import datetime
 from config.database import Base
@@ -19,6 +19,8 @@ class User(Base):
     updatedAt = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+    role = Column(String, nullable=False, default="user")
+    active = Column(Boolean, nullable=False, default="true")
 
     points = relationship(
         "Point", back_populates="user", cascade="all, delete, delete-orphan"

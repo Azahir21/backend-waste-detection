@@ -4,11 +4,17 @@ from fastapi.params import Depends
 from src.repositories.repository_user import UserRepository
 from src.controllers.auth.service_jwt import JWTService
 from src.controllers.auth import service_security
-from config.schemas.auth_schema import InputUser, InputLogin, OutputLogin, OutputProfile
+from config.schemas.auth_schema import (
+    InputUser,
+    InputLogin,
+    OutputAllUser,
+    OutputLogin,
+    OutputProfile,
+)
 from config.schemas.common_schema import TokenData
 
 
-class AuthController:
+class AuthStackholderController:
     def __init__(
         self,
         user_repository: UserRepository = Depends(),
@@ -37,11 +43,12 @@ class AuthController:
 
     async def login_user(self, input_login: InputLogin):
         found_user = await self.user_repository.find_user_by_email(input_login.email)
-
         if found_user is None:
             raise HTTPException(status_code=404, detail="Invalid Email or Password")
         if found_user.active is False:
             raise HTTPException(status_code=404, detail="User is not active")
+        if found_user.role == "user":
+            raise HTTPException(status_code=404, detail="User is not a stackholder")
         if not self.security_service.verify_password(
             input_login.password,
             found_user.password,
@@ -69,6 +76,59 @@ class AuthController:
             return OutputProfile(username=found_user.username, email=found_user.email)
         except Exception as e:
             raise HTTPException(status_code=404, detail="Invalid Token")
+
+    async def deactivate_user(self, tokenData: TokenData, id: int):
+        # First check user permissions
+        found_user = await self.user_repository.find_user_by_username(tokenData.name)
+        if found_user.role != "admin":
+            raise HTTPException(status_code=403, detail="User is not a Admin")
+
+        # Attempt to deactivate user
+        deactivate_user = await self.user_repository.deactivate_user(id)
+
+        # Return success response
+        if deactivate_user.active:
+            return {
+                "detail": f"User with username: {deactivate_user.username} has been activated"
+            }
+        return {
+            "detail": f"User with username: {deactivate_user.username} has been deactivated"
+        }
+
+    async def reset_password(self, tokenData: TokenData, id: int, password: str):
+        # First check user permissions
+        found_user = await self.user_repository.find_user_by_username(tokenData.name)
+        if found_user.role != "admin":
+            raise HTTPException(status_code=403, detail="User is not a Admin")
+
+        # Attempt to reset password
+        password = self.security_service.get_password_hash(password)
+        reset_password = await self.user_repository.reset_password(id, password)
+
+        # Return success response
+        return {
+            "detail": f"Password for user: {reset_password.username} has been reset"
+        }
+
+    async def get_all_user(self, tokenData: TokenData):
+        # First check user permissions
+        found_user = await self.user_repository.find_user_by_username(tokenData.name)
+        if found_user.role != "admin":
+            raise HTTPException(status_code=403, detail="User is not a Admin")
+
+        # Attempt to get all user
+        all_user = await self.user_repository.get_all_user()
+        all_user = [
+            OutputAllUser(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                role=user.role,
+                active=user.active,
+            )
+            for user in all_user
+        ]
+        return all_user
 
     # async def delete_user(self, id: int):
     #     try:
