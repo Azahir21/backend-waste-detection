@@ -9,6 +9,8 @@ from src.routers.router_sampah_user import sampah_user_router
 from src.routers.router_sampah import sampah_router
 from src.routers.route_stackholder_auth import auth_stackholder_router
 from src.routers.route_stackholder_statistic import statistic_stackholder_router
+from src.routers.route_stackholder_sampah import sampah_stackholder_router
+from src.routers.route_sipsn_tps import sipsn_tps_router
 from config.models import (
     badge_model,
     user_model,
@@ -20,6 +22,7 @@ from config.models import (
 )
 
 app = FastAPI(debug=True, swagger_ui_parameters={"deepLinking": False})
+
 
 user_model.Base.metadata.create_all(bind=engine)
 article_model.Base.metadata.create_all(bind=engine)
@@ -47,3 +50,5 @@ app.include_router(sampah_router)
 app.include_router(sampah_user_router)
 app.include_router(auth_stackholder_router)
 app.include_router(statistic_stackholder_router)
+app.include_router(sampah_stackholder_router)
+app.include_router(sipsn_tps_router)
