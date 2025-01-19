@@ -30,7 +30,7 @@ def insert_image_to_local(file: UploadFile, folder: str = "default"):
             f.write(content)
     except Exception as e:
         print(e)
-        return {"message": "There was an error uploading the file"}
+        raise HTTPException(status_code=500, detail="Error saving image file")
     finally:
         file.file.close()
     return filename
@@ -40,10 +40,10 @@ def delete_image_from_local(file_path: str):
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
+        return {"detail": "File deleted successfully"}
     except OSError as e:
         logger.error(f"Error deleting image file: {e}")
         raise HTTPException(status_code=500, detail="Error deleting image file")
-    return {"message": "File deleted successfully"}
 
 
 def get_image_from_image_path(image_path: str) -> str:
@@ -57,19 +57,6 @@ def get_image_from_image_path(image_path: str) -> str:
         raise HTTPException(status_code=404, detail="Image file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-
-
-# def save_image_base64_to_local(image_data: str, filename: str, folder: str = "default"):
-#     try:
-#         decoded_image = base64.b64decode(image_data)
-#         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-#         filename = f"{timestamp}_{filename}.jpg"
-#         with open(f"assets/{folder}/{filename}", "wb") as f:
-#             f.write(decoded_image)
-#         return f"assets/{folder}/{filename}"
-#     except Exception as e:
-#         print(e)
-#         return {"message": "There was an error saving the image"}
 
 
 def save_image_base64_to_local(
@@ -87,4 +74,4 @@ def save_image_base64_to_local(
         return output_path
     except Exception as e:
         print(e)
-        return {"message": "There was an error saving the image"}
+        HTTPException(status_code=500, detail="Error saving image file")

@@ -35,7 +35,7 @@ class SampahRepository:
         try:
             current_time = datetime.now()
 
-            # insert sampah data
+            # Insert sampah data
             new_sampah = sampah_model.Sampah(
                 userId=user_id,
                 address=input_sampah.address,
@@ -47,7 +47,9 @@ class SampahRepository:
                 updatedAt=current_time,
             )
             self.db.add(new_sampah)
+            self.db.flush()  # Ensure new_sampah.id is available
 
+            # Insert sampah items
             for sampah_item in input_sampah.sampah_items:
                 new_sampah_item = sampah_item_model.SampahItem(
                     sampahId=new_sampah.id,
@@ -56,8 +58,10 @@ class SampahRepository:
                     updatedAt=datetime.now(),
                 )
                 self.db.add(new_sampah_item)
-                self.db.commit()
-                self.db.refresh(new_sampah_item)
+
+            # Commit the transaction after all items are added
+            self.db.commit()
+            self.db.refresh(new_sampah)
 
             # Update user point
             updated_point = await self.point_repository.update_user_point(
