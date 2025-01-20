@@ -143,9 +143,13 @@ class SampahRepository:
                 data.append(
                     OutputSampahDetail(
                         id=sampah.id,
+                        is_waste_pile=sampah.isGarbagePile,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
                         captureTime=sampah.captureTime,
+                        pickupAt=sampah.pickupAt,
+                        is_pickup=sampah.isPickup,
+                        is_pickup_by_user=sampah.pickupByUser,
                         point=sampah.point,
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,
@@ -154,7 +158,6 @@ class SampahRepository:
                     )
                 )
             return data
-
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
@@ -185,14 +188,18 @@ class SampahRepository:
 
             return OutputSampahDetail(
                 id=sampah.id,
+                is_waste_pile=sampah.isGarbagePile,
                 address=sampah.address,
                 geom=to_shape(sampah.geom).wkt,
-                image=sampah.imagePath,
                 captureTime=sampah.captureTime,
+                pickupAt=sampah.pickupAt,
+                is_pickup=sampah.isPickup,
+                is_pickup_by_user=sampah.pickupByUser,
                 point=sampah.point,
                 total_sampah=len(sampah_items_list),
                 sampah_items=sampah_items_list,
                 count_items=count_objects,
+                image=sampah.imagePath,
             )
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
@@ -237,9 +244,13 @@ class SampahRepository:
                 data.append(
                     OutputSampahDetail(
                         id=sampah.id,
+                        is_waste_pile=sampah.isGarbagePile,
                         address=sampah.address,
                         geom=to_shape(sampah.geom).wkt,
                         captureTime=sampah.captureTime,
+                        pickupAt=sampah.pickupAt,
+                        is_pickup=sampah.isPickup,
+                        is_pickup_by_user=sampah.pickupByUser,
                         point=sampah.point,
                         total_sampah=len(sampah_items_list),
                         sampah_items=sampah_items_list,

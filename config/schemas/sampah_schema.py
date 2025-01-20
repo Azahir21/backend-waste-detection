@@ -44,25 +44,18 @@ class OutputSampah(BaseModel):
 
 class OutputSampahDetail(BaseModel):
     id: int
+    is_waste_pile: bool
     address: str
     geom: str
     captureTime: datetime.datetime
+    is_pickup: bool
+    pickupAt: Optional[datetime.datetime]  # Allowing None for pickupAt
+    is_pickup_by_user: Optional[str]  # Allowing None for is_pickup_by_user
     point: int
     total_sampah: int
     sampah_items: List[OutputSampahItem]
     count_items: List[CountObject]
     image: str
-
-
-class OutputSampahMaps(BaseModel):
-    id: int
-    address: str
-    geom: str
-    captureTime: datetime.datetime
-    point: int
-    total_sampah: int
-    sampah_items: List[OutputSampahItem]
-    count_items: List[CountObject]
 
 
 class RawData(BaseModel):
