@@ -1,5 +1,5 @@
 from typing_extensions import Annotated
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 from fastapi import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -77,9 +77,13 @@ async def user_reset_password(
 @auth_stackholder_router.get("/get_all_user")
 async def user_get_all(
     token: Annotated[TokenData, Depends(get_current_user)],
+    page: int = Query(1, ge=1),  # Page number (default is 1, must be >= 1)
+    page_size: int = Query(
+        10, ge=1, le=100
+    ),  # Page size (default is 10, must be 1-100)
     user_controller: AuthController = Depends(),
 ):
-    return await user_controller.get_all_user(token)
+    return await user_controller.get_all_user(token, page, page_size)
 
 
 # @auth_stackholder_router.delete("/delete")

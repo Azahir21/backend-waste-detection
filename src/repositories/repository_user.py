@@ -97,8 +97,14 @@ class UserRepository:
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_all_user(self):
+    async def get_all_user(self, page: int, page_size: int):
         try:
-            return self.db.query(user_model.User).all()
+            # Calculate offsets
+            offset = (page - 1) * page_size
+            # Fetch paginated users
+            query = self.db.query(user_model.User)
+            total_count = query.count()
+            users = query.offset(offset).limit(page_size).all()
+            return users, total_count
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
