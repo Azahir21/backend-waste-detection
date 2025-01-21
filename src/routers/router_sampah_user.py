@@ -19,9 +19,11 @@ sampah_user_router = APIRouter(prefix="/api/v1/user", tags=["Sampah User"])
 @sampah_user_router.get("/sampah")
 async def get_sampah(
     token: Annotated[TokenData, Depends(get_current_user)],
+    page: int = Query(1, ge=1),  # Page number (default 1)
+    page_size: int = Query(10, ge=1, le=100),  # Page size (default 10, max 100)
     sampah_controller: SampahController = Depends(),
 ):
-    return await sampah_controller.get_all_user_sampah(token)
+    return await sampah_controller.get_all_user_sampah(token, page, page_size)
 
 
 @sampah_user_router.get("/sampah/{sampah_id}")
@@ -49,7 +51,6 @@ async def post_sampah(
     sampah_controller: SampahController = Depends(),
 ):
     return await sampah_controller.post_sampah(input_sampah, token)
-    # return StandardResponse(detail="Success Post Sampah")
 
 
 @sampah_user_router.post("/sampah/timeseries")

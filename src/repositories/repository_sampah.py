@@ -106,14 +106,21 @@ class SampahRepository:
                 status_code=500, detail=f"{self.DATABASE_ERROR_MESSAGE}: {str(e)}"
             )
 
-    async def get_all_user_sampah(self, user_id):
+    async def get_all_user_sampah(self, user_id, page, page_size):
         try:
+            query = self.db.query(sampah_model.Sampah).filter(
+                sampah_model.Sampah.userId == user_id
+            )
+            total_count = query.count()
             data = (
-                self.db.query(sampah_model.Sampah)
-                .filter(sampah_model.Sampah.userId == user_id)
+                query.order_by(sampah_model.Sampah.captureTime.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
                 .all()
             )
-            return [OutputSampah.from_orm(sampah).dict() for sampah in data]
+            return [
+                OutputSampah.from_orm(sampah).dict() for sampah in data
+            ], total_count
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
