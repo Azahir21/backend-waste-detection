@@ -28,6 +28,7 @@ class InputSampah(BaseModel):
     point: int
     image: str
     filename: str
+    is_waste_pile: bool
     capture_date: datetime.datetime
     sampah_items: List[InputSampahItem]
 

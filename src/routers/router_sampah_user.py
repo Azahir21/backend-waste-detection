@@ -4,9 +4,10 @@ from fastapi import (
     Body,
     Depends,
     File,
+    Query,
     UploadFile,
 )
-from config.schemas.common_schema import StandardResponse, TokenData
+from config.schemas.common_schema import TokenData
 from config.schemas.sampah_schema import InputSampah, Timeseries
 from src.controllers.sampah.controller_sampah import SampahController
 from src.controllers.service_common import get_current_user

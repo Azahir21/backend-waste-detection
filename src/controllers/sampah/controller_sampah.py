@@ -35,8 +35,8 @@ class SampahController:
         data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
         return data
 
-    async def get_all_sampah(self, token: TokenData):
-        data = await self.sampah_repository.get_all_sampah()
+    async def get_all_sampah(self, token: TokenData, data_type: str):
+        data = await self.sampah_repository.get_all_sampah(data_type)
         for item in data:
             item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
@@ -78,9 +78,11 @@ class SampahController:
         return await self.sampah_repository.insert_new_sampah(input_sampah, user.id)
 
     async def get_sampah_timeseries(
-        self, token: TokenData, start_date: datetime, end_date: datetime
+        self, token: TokenData, data_type: str, start_date: datetime, end_date: datetime
     ):
-        data = await self.sampah_repository.get_sampah_timeseries(start_date, end_date)
+        data = await self.sampah_repository.get_sampah_timeseries(
+            data_type, start_date, end_date
+        )
         for item in data:
             item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data

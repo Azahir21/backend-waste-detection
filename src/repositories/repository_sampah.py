@@ -43,6 +43,8 @@ class SampahRepository:
                 geom=f"POINT({input_sampah.longitude} {input_sampah.latitude})",
                 captureTime=input_sampah.capture_date,
                 point=input_sampah.point,
+                isGarbagePile=input_sampah.is_waste_pile,
+                isPickup=False,
                 createdAt=current_time,
                 updatedAt=current_time,
             )
@@ -115,18 +117,22 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_all_sampah(self):
+    async def get_all_sampah(self, data_type: str):
         try:
-            sampahs = (
-                self.db.query(sampah_model.Sampah)
-                .options(
-                    joinedload(sampah_model.Sampah.sampah_items).joinedload(
-                        sampah_item_model.SampahItem.jenis_sampah
-                    )
+            query = self.db.query(sampah_model.Sampah).options(
+                joinedload(sampah_model.Sampah.sampah_items).joinedload(
+                    sampah_item_model.SampahItem.jenis_sampah
                 )
-                .all()
             )
-            if sampahs is None:
+
+            if data_type == "garbage_pile":
+                query = query.filter(sampah_model.Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                query = query.filter(sampah_model.Sampah.isGarbagePile == False)
+
+            sampahs = query.all()
+
+            if not sampahs:
                 raise HTTPException(status_code=404, detail="Sampah not found")
 
             data = []
@@ -140,23 +146,24 @@ class SampahRepository:
 
                 count_objects = self.calculate_objects(sampah_items_list)
 
-                data.append(
-                    OutputSampahDetail(
-                        id=sampah.id,
-                        is_waste_pile=sampah.isGarbagePile,
-                        address=sampah.address,
-                        geom=to_shape(sampah.geom).wkt,
-                        captureTime=sampah.captureTime,
-                        pickupAt=sampah.pickupAt,
-                        is_pickup=sampah.isPickup,
-                        is_pickup_by_user=sampah.pickupByUser,
-                        point=sampah.point,
-                        total_sampah=len(sampah_items_list),
-                        sampah_items=sampah_items_list,
-                        count_items=count_objects,
-                        image=sampah.imagePath,
+                if sampah_items_list and count_objects:
+                    data.append(
+                        OutputSampahDetail(
+                            id=sampah.id,
+                            is_waste_pile=sampah.isGarbagePile,
+                            address=sampah.address,
+                            geom=to_shape(sampah.geom).wkt,
+                            captureTime=sampah.captureTime,
+                            pickupAt=sampah.pickupAt,
+                            is_pickup=sampah.isPickup,
+                            is_pickup_by_user=sampah.pickupByUser,
+                            point=sampah.point,
+                            total_sampah=len(sampah_items_list),
+                            sampah_items=sampah_items_list,
+                            count_items=count_objects,
+                            image=sampah.imagePath,
+                        )
                     )
-                )
             return data
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
@@ -215,9 +222,9 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_sampah_timeseries(self, start_date, end_date):
+    async def get_sampah_timeseries(self, data_type, start_date, end_date):
         try:
-            sampahs = (
+            query = (
                 self.db.query(sampah_model.Sampah)
                 .filter(sampah_model.Sampah.captureTime >= start_date)
                 .filter(sampah_model.Sampah.captureTime <= end_date)
@@ -226,9 +233,16 @@ class SampahRepository:
                         sampah_item_model.SampahItem.jenis_sampah
                     )
                 )
-                .all()
             )
-            if sampahs is None:
+
+            if data_type == "garbage_pile":
+                query = query.filter(sampah_model.Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                query = query.filter(sampah_model.Sampah.isGarbagePile == False)
+
+            sampahs = query.all()
+
+            if not sampahs:
                 raise HTTPException(status_code=404, detail="Sampah not found")
 
             data = []
@@ -241,24 +255,25 @@ class SampahRepository:
                 ]
                 count_objects = self.calculate_objects(sampah_items_list)
 
-                data.append(
-                    OutputSampahDetail(
-                        id=sampah.id,
-                        is_waste_pile=sampah.isGarbagePile,
-                        address=sampah.address,
-                        geom=to_shape(sampah.geom).wkt,
-                        captureTime=sampah.captureTime,
-                        pickupAt=sampah.pickupAt,
-                        is_pickup=sampah.isPickup,
-                        is_pickup_by_user=sampah.pickupByUser,
-                        point=sampah.point,
-                        total_sampah=len(sampah_items_list),
-                        sampah_items=sampah_items_list,
-                        count_items=count_objects,
-                        image=sampah.imagePath,
+                if sampah_items_list and count_objects:
+                    data.append(
+                        OutputSampahDetail(
+                            id=sampah.id,
+                            is_waste_pile=sampah.isGarbagePile,
+                            address=sampah.address,
+                            geom=to_shape(sampah.geom).wkt,
+                            captureTime=sampah.captureTime,
+                            pickupAt=sampah.pickupAt,
+                            is_pickup=sampah.isPickup,
+                            is_pickup_by_user=sampah.pickupByUser,
+                            point=sampah.point,
+                            total_sampah=len(sampah_items_list),
+                            sampah_items=sampah_items_list,
+                            count_items=count_objects,
+                            image=sampah.imagePath,
+                        )
                     )
-                )
-
+            print(len(data))
             return data
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
