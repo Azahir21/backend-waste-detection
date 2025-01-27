@@ -24,239 +24,69 @@ class StatisticRepository:
 
     DATABASE_ERROR_MESSAGE = "Database error"
 
-    async def get_collection_statistic(self, data_type: str, page: int, page_size: int):
+    async def get_total_statistic(self, token):
         try:
-            query = (
-                self.db.query(
-                    Sampah.id,
-                    Sampah.isGarbagePile.label("is_waste_pile"),
-                    Sampah.address,
-                    Sampah.geom,
-                    Sampah.pickupAt,
-                    func.count(SampahItem.id).label("waste_count"),
-                    Sampah.pickupByUser.label("pickup_by_user"),
-                )
-                .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(Sampah.isPickup == True)
-            )
-
-            if data_type == "garbage_pile":
-                query = query.filter(Sampah.isGarbagePile == True)
-            elif data_type == "garbage_pcs":
-                query = query.filter(Sampah.isGarbagePile == False)
-
-            collected_waste = (
-                query.group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-                .all()
-            )
-
-            collected_list = [
-                WasteCollected(
-                    id=item.id,
-                    is_waste_pile=item.is_waste_pile,
-                    address=item.address,
-                    geom=to_shape(item.geom).wkt,
-                    pickupAt=item.pickupAt,
-                    waste_count=item.waste_count,
-                    pickup_by_user=item.pickup_by_user,
-                )
-                for item in collected_waste
-            ]
-
-            # Calculate totals
-            total_waste_collected_query = (
-                self.db.query(Sampah)
-                .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(Sampah.isPickup == True)
-            )
-
-            if data_type == "garbage_pile":
-                total_waste_collected_query = total_waste_collected_query.filter(
-                    Sampah.isGarbagePile == True
-                )
-            elif data_type == "garbage_pcs":
-                total_waste_collected_query = total_waste_collected_query.filter(
-                    Sampah.isGarbagePile == False
-                )
-
-            total_waste_collected = total_waste_collected_query.group_by(
-                Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile
-            ).count()
-
-            # Return the result in the expected schema
-            return collected_list, total_waste_collected
-
-        except Exception as e:
-            print(f"Error: {e}")
-            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-    async def get_collection_statistic_timeseries(
-        self, token, data_type, start_date, end_date, page: int, page_size: int
-    ):
-        try:
-            query = (
-                self.db.query(
-                    Sampah.id,
-                    Sampah.isGarbagePile.label("is_waste_pile"),
-                    Sampah.address,
-                    Sampah.geom,
-                    Sampah.pickupAt,
-                    func.count(SampahItem.id).label("waste_count"),
-                    Sampah.pickupByUser.label("pickup_by_user"),
-                )
-                .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(
-                    Sampah.isPickup == True,
-                    Sampah.pickupAt.between(start_date, end_date),
-                )
-            )
-
-            if data_type == "garbage_pile":
-                query = query.filter(Sampah.isGarbagePile == True)
-            elif data_type == "garbage_pcs":
-                query = query.filter(Sampah.isGarbagePile == False)
-
-            collected_waste = (
-                query.group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-                .all()
-            )
-
-            collected_list = [
-                WasteCollected(
-                    id=item.id,
-                    is_waste_pile=item.is_waste_pile,
-                    address=item.address,
-                    geom=to_shape(item.geom).wkt,
-                    pickupAt=item.pickupAt,
-                    waste_count=item.waste_count,
-                    pickup_by_user=item.pickup_by_user,
-                )
-                for item in collected_waste
-            ]
-
-            # Calculate totals
-            total_waste_collected_query = (
+            query_collected_garbage_pile = (
                 self.db.query(Sampah)
                 .join(SampahItem, Sampah.id == SampahItem.sampahId)
                 .filter(
                     Sampah.isPickup == True,
-                    Sampah.pickupAt.between(start_date, end_date),
+                    Sampah.isGarbagePile == True,
+                    SampahItem.id.isnot(None),
                 )
+                .count()
             )
-
-            if data_type == "garbage_pile":
-                total_waste_collected_query = total_waste_collected_query.filter(
-                    Sampah.isGarbagePile == True
-                )
-            elif data_type == "garbage_pcs":
-                total_waste_collected_query = total_waste_collected_query.filter(
-                    Sampah.isGarbagePile == False
-                )
-
-            total_waste_collected = total_waste_collected_query.group_by(
-                Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile
-            ).count()
-
-            # Return the result in the expected schema
-            return collected_list, total_waste_collected
-
-        except Exception as e:
-            print(f"Error: {e}")
-            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-    async def get_uncollected_statistic(
-        self, token, data_type: str, page: int, page_size: int
-    ):
-        try:
-            query = (
-                self.db.query(
-                    Sampah.id,
-                    Sampah.isGarbagePile.label("is_waste_pile"),
-                    Sampah.address,
-                    Sampah.geom,
-                    Sampah.captureTime,
-                    func.count(SampahItem.id).label("waste_count"),
-                )
-                .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(Sampah.isPickup == False)
-            )
-
-            if data_type == "garbage_pile":
-                query = query.filter(Sampah.isGarbagePile == True)
-            elif data_type == "garbage_pcs":
-                query = query.filter(Sampah.isGarbagePile == False)
-            print((query.count))
-            not_collected_waste = (
-                query.group_by(Sampah.id, Sampah.isGarbagePile)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-                .all()
-            )
-
-            not_collected_list = [
-                WasteNotCollected(
-                    id=item.id,
-                    is_waste_pile=item.is_waste_pile,
-                    address=item.address,
-                    geom=to_shape(item.geom).wkt,
-                    captureTime=item.captureTime,
-                    waste_count=item.waste_count,
-                )
-                for item in not_collected_waste
-            ]
-
-            # Calculate totals
-            total_waste_not_collected_query = (
+            query_collected_garbage_pcs = (
                 self.db.query(Sampah)
                 .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(Sampah.isPickup == False)
+                .filter(
+                    Sampah.isPickup == True,
+                    Sampah.isGarbagePile == False,
+                    SampahItem.id.isnot(None),
+                )
+                .count()
             )
-
-            if data_type == "garbage_pile":
-                total_waste_not_collected_query = (
-                    total_waste_not_collected_query.filter(Sampah.isGarbagePile == True)
-                )
-            elif data_type == "garbage_pcs":
-                total_waste_not_collected_query = (
-                    total_waste_not_collected_query.filter(
-                        Sampah.isGarbagePile == False
-                    )
-                )
-
-            total_waste_not_collected = total_waste_not_collected_query.group_by(
-                Sampah.id, Sampah.isGarbagePile
-            ).count()
-
-            # Return the result in the expected schema
-            return not_collected_list, total_waste_not_collected
-
-        except Exception as e:
-            print(f"Error: {e}")
-            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-    async def get_uncollected_statistic_timeseries(
-        self, token, data_type, start_date, end_date, page: int, page_size: int
-    ):
-        try:
-            query = (
-                self.db.query(
-                    Sampah.id,
-                    Sampah.isGarbagePile.label("is_waste_pile"),
-                    Sampah.address,
-                    Sampah.geom,
-                    Sampah.captureTime,
-                    func.count(SampahItem.id).label("waste_count"),
-                )
+            query_not_collected_garbage_pile = (
+                self.db.query(Sampah)
                 .join(SampahItem, Sampah.id == SampahItem.sampahId)
                 .filter(
                     Sampah.isPickup == False,
-                    Sampah.captureTime.between(start_date, end_date),
+                    Sampah.isGarbagePile == True,
+                    SampahItem.id.isnot(None),
                 )
-                .all()
+                .count()
+            )
+            query_not_collected_garbage_pcs = (
+                self.db.query(Sampah)
+                .join(SampahItem, Sampah.id == SampahItem.sampahId)
+                .filter(
+                    Sampah.isPickup == False,
+                    Sampah.isGarbagePile == False,
+                    SampahItem.id.isnot(None),
+                )
+                .count()
+            )
+            return {
+                "collected_garbage_pile": query_collected_garbage_pile,
+                "collected_garbage_pcs": query_collected_garbage_pcs,
+                "not_collected_garbage_pile": query_not_collected_garbage_pile,
+                "not_collected_garbage_pcs": query_not_collected_garbage_pcs,
+                "total_collected": query_collected_garbage_pile
+                + query_collected_garbage_pcs,
+                "total_not_collected": query_not_collected_garbage_pile
+                + query_not_collected_garbage_pcs,
+            }
+
+        except Exception as e:
+            print(f"Error: {e}")
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def get_data_statistic(
+        self, token, data_type: str, status: str, page: int, page_size: int
+    ):
+        try:
+            query = self.db.query(Sampah).filter(
+                Sampah.isPickup == (status == "collected")
             )
 
             if data_type == "garbage_pile":
@@ -264,659 +94,167 @@ class StatisticRepository:
             elif data_type == "garbage_pcs":
                 query = query.filter(Sampah.isGarbagePile == False)
 
-            not_collected_waste = (
-                query.group_by(Sampah.id, Sampah.isGarbagePile)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-                .all()
-            )
+            if status == "collected":
+                query = query.filter(Sampah.isPickup == True)
+            elif status == "not_collected":
+                query = query.filter(Sampah.isPickup == False)
 
-            not_collected_list = [
-                WasteNotCollected(
-                    id=item.id,
-                    is_waste_pile=item.is_waste_pile,
-                    address=item.address,
-                    geom=to_shape(item.geom).wkt,
-                    captureTime=item.captureTime,
-                    waste_count=item.waste_count,
-                )
-                for item in not_collected_waste
-            ]
+            total_count = query.count()
+            sampahs = query.offset((page - 1) * page_size).limit(page_size).all()
 
-            # Calculate totals
-            total_waste_not_collected_query = (
-                self.db.query(Sampah)
-                .join(SampahItem, Sampah.id == SampahItem.sampahId)
-                .filter(Sampah.isPickup == False)
-            )
-
-            if data_type == "garbage_pile":
-                total_waste_not_collected_query = (
-                    total_waste_not_collected_query.filter(Sampah.isGarbagePile == True)
-                )
-            elif data_type == "garbage_pcs":
-                total_waste_not_collected_query = (
-                    total_waste_not_collected_query.filter(
-                        Sampah.isGarbagePile == False
-                    )
-                )
-
-            total_waste_not_collected = total_waste_not_collected_query.group_by(
-                Sampah.id, Sampah.isGarbagePile
-            ).count()
-            # Return the result in the expected schema
-            return not_collected_list, total_waste_not_collected
+            return sampahs, total_count
 
         except Exception as e:
             print(f"Error: {e}")
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
+    async def get_data_statistic(
+        self, token, data_type: str, status: str, page: int, page_size: int
+    ):
+        try:
+            query = self.db.query(
+                Sampah.id,
+                Sampah.isGarbagePile.label("is_waste_pile"),
+                Sampah.address,
+                Sampah.geom,
+                Sampah.pickupAt.label("pickup_at"),
+                Sampah.captureTime.label("capture_time"),
+                func.count(SampahItem.id).label("waste_count"),
+                Sampah.pickupByUser.label("pickup_by_user"),
+            ).join(SampahItem, Sampah.id == SampahItem.sampahId)
 
-####################################################################################
-# async def get_all_statistic(self, token):
-#     try:
-#         # Query for collected waste statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
+            if status == "collected":
+                query = query.filter(Sampah.isPickup == True)
+            elif status == "uncollected":
+                query = query.filter(Sampah.isPickup == False)
 
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
+            if data_type == "garbage_pile":
+                query = query.filter(Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                query = query.filter(Sampah.isGarbagePile == False)
 
-#         # Query for not collected waste statistics
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == False)
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
+            result = (
+                query.group_by(Sampah.id, Sampah.isGarbagePile, Sampah.pickupByUser)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+                .all()
+            )
 
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
+            result_list = [
+                {
+                    "id": item.id,
+                    "is_waste_pile": item.is_waste_pile,
+                    "address": item.address,
+                    "geom": to_shape(item.geom).wkt,
+                    "pickup_at": item.pickup_at,
+                    "capture_time": item.capture_time,
+                    "waste_count": item.waste_count,
+                    "pickup_by_user": item.pickup_by_user,
+                }
+                for item in result
+            ]
 
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
+            total_query = self.db.query(Sampah).join(
+                SampahItem, Sampah.id == SampahItem.sampahId
+            )
 
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
+            if status == "collected":
+                total_query = total_query.filter(Sampah.isPickup == True)
+            elif status == "uncollected":
+                total_query = total_query.filter(Sampah.isPickup == False)
 
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+            if data_type == "garbage_pile":
+                total_query = total_query.filter(Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                total_query = total_query.filter(Sampah.isGarbagePile == False)
 
-# async def get_all_statistic_timeseries(self, token, start_date, end_date):
-#     try:
-#         # Query for collected waste statistics within date range
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == True,
-#                 Sampah.pickupAt.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
+            total_count = total_query.group_by(Sampah.id).count()
 
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
+            return result_list, total_count
 
-#         # Query for not collected waste statistics within date range
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == False,
-#                 Sampah.captureTime.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
+        except Exception as e:
+            print(f"Error: {e}")
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
+    async def get_data_statistic_timeseries(
+        self,
+        token,
+        data_type: str,
+        status: str,
+        start_date,
+        end_date,
+        page: int,
+        page_size: int,
+    ):
+        try:
+            query = (
+                self.db.query(
+                    Sampah.id,
+                    Sampah.isGarbagePile.label("is_waste_pile"),
+                    Sampah.address,
+                    Sampah.geom,
+                    Sampah.pickupAt.label("pickup_at"),
+                    Sampah.captureTime.label("capture_time"),
+                    func.count(SampahItem.id).label("waste_count"),
+                    Sampah.pickupByUser.label("pickup_by_user"),
+                )
+                .join(SampahItem, Sampah.id == SampahItem.sampahId)
+                .filter(
+                    (
+                        Sampah.pickupAt if status == "collected" else Sampah.captureTime
+                    ).between(start_date, end_date)
+                )
+            )
 
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
+            if status == "collected":
+                query = query.filter(Sampah.isPickup == True)
+            elif status == "uncollected":
+                query = query.filter(Sampah.isPickup == False)
 
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
+            if data_type == "garbage_pile":
+                query = query.filter(Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                query = query.filter(Sampah.isGarbagePile == False)
 
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+            result = (
+                query.group_by(Sampah.id, Sampah.isGarbagePile, Sampah.pickupByUser)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+                .all()
+            )
 
-# async def get_garbage_pile_statistic(self, token):
-#     try:
-#         # Query for collected garbage pile statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True, Sampah.isGarbagePile == True)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
+            result_list = [
+                {
+                    "id": item.id,
+                    "is_waste_pile": item.is_waste_pile,
+                    "address": item.address,
+                    "geom": to_shape(item.geom).wkt,
+                    "pickup_at": item.pickup_at,
+                    "capture_time": item.capture_time,
+                    "waste_count": item.waste_count,
+                    "pickup_by_user": item.pickup_by_user,
+                }
+                for item in result
+            ]
 
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
+            total_query = self.db.query(Sampah).join(
+                SampahItem, Sampah.id == SampahItem.sampahId
+            )
 
-#         # Query for not collected garbage pile statistics
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == False, Sampah.isGarbagePile == True)
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
+            if status == "collected":
+                total_query = total_query.filter(Sampah.isPickup == True)
+            elif status == "uncollected":
+                total_query = total_query.filter(Sampah.isPickup == False)
 
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
+            if data_type == "garbage_pile":
+                total_query = total_query.filter(Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                total_query = total_query.filter(Sampah.isGarbagePile == False)
 
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
+            total_count = total_query.group_by(Sampah.id).count()
 
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
+            return result_list, total_count
 
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_garbage_pile_statistic_timeseries(self, token, start_date, end_date):
-#     try:
-#         # Query for collected garbage pile statistics within date range
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == True,
-#                 Sampah.isGarbagePile == True,
-#                 Sampah.pickupAt.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Query for not collected garbage pile statistics within date range
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == False,
-#                 Sampah.isGarbagePile == True,
-#                 Sampah.captureTime.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
-
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_garbage_pcs_statistic(self, token):
-#     try:
-#         # Query for collected garbage pcs statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True, Sampah.isGarbagePile == False)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Query for not collected garbage pcs statistics
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == False, Sampah.isGarbagePile == False)
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
-
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_garbage_pcs_statistic_timeseries(self, token, start_date, end_date):
-#     try:
-#         # Query for collected garbage pcs statistics within date range
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == True,
-#                 Sampah.isGarbagePile == False,
-#                 Sampah.pickupAt.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Query for not collected garbage pcs statistics within date range
-#         not_collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.captureTime,
-#                 func.count(SampahItem.id).label("waste_count"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(
-#                 Sampah.isPickup == False,
-#                 Sampah.isGarbagePile == False,
-#                 Sampah.captureTime.between(start_date, end_date),
-#             )
-#             .group_by(Sampah.id, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         not_collected_list = [
-#             WasteNotCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 captureTime=item.captureTime,
-#                 waste_count=item.waste_count,
-#             )
-#             for item in not_collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-#         total_waste_not_collected = len(not_collected_list)
-
-#         # Return the result in the expected schema
-#         return StatisticOutput(
-#             total_waste_collected=total_waste_collected,
-#             total_waste_not_collected=total_waste_not_collected,
-#             collected=collected_list,
-#             not_collected=not_collected_list,
-#         )
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_all_collection_statistic(self, token, page: int, page_size: int):
-#     try:
-#         # Query for all collected waste statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-
-#         # Return the result in the expected schema
-#         return collected_list, total_waste_collected
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_collection_garbage_pile_statistic(
-#     self, token, page: int, page_size: int
-# ):
-#     try:
-#         # Query for collected garbage pile statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True, Sampah.isGarbagePile == True)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-
-#         # Return the result in the expected schema
-#         return collected_list, total_waste_collected
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
-
-# async def get_collection_garbage_pcs_statistic(
-#     self, token, page: int, page_size: int
-# ):
-#     try:
-#         # Query for collected garbage pcs statistics
-#         collected_waste = (
-#             self.db.query(
-#                 Sampah.id,
-#                 Sampah.isGarbagePile.label("is_waste_pile"),
-#                 Sampah.address,
-#                 Sampah.geom,
-#                 Sampah.pickupAt,
-#                 func.count(SampahItem.id).label("waste_count"),
-#                 Sampah.pickupByUser.label("pickup_by_user"),
-#             )
-#             .join(SampahItem, Sampah.id == SampahItem.sampahId)
-#             .filter(Sampah.isPickup == True, Sampah.isGarbagePile == False)
-#             .group_by(Sampah.id, Sampah.pickupByUser, Sampah.isGarbagePile)
-#             .all()
-#         )
-
-#         collected_list = [
-#             WasteCollected(
-#                 id=item.id,
-#                 is_waste_pile=item.is_waste_pile,
-#                 address=item.address,
-#                 geom=to_shape(item.geom).wkt,
-#                 pickupAt=item.pickupAt,
-#                 waste_count=item.waste_count,
-#                 pickup_by_user=item.pickup_by_user,
-#             )
-#             for item in collected_waste
-#         ]
-
-#         # Calculate totals
-#         total_waste_collected = len(collected_list)
-
-#         # Return the result in the expected schema
-#         return collected_list, total_waste_collected
-
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+        except Exception as e:
+            print(f"Error: {e}")
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
