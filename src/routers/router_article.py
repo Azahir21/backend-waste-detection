@@ -1,5 +1,5 @@
 from typing_extensions import Annotated
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 
 from config.schemas.article_schema import InputArticle
 from config.schemas.common_schema import StandardResponse, TokenData
@@ -13,9 +13,11 @@ article_router = APIRouter(prefix="/api/v1", tags=["Article"])
 @article_router.get("/articles")
 async def get_all_articles(
     token: Annotated[TokenData, Depends(get_current_user)],
+    page: int = Query(1, gt=0),
+    page_size: int = Query(10, gt=0),
     article_controller: ArticleController = Depends(),
 ):
-    return article_controller.get_articles()
+    return article_controller.get_articles(page, page_size)
 
 
 @article_router.get("/article/{title}")

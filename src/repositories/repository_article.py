@@ -30,9 +30,11 @@ class ArticleRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    def get_all_articles(self):
+    def get_all_articles(self, page: int, page_size: int):
         try:
-            data = self.db.query(article_model.Article).all()
+            data = self.db.query(article_model.Article)
+            total_count = data.count()
+            data = data.limit(page_size).offset((page - 1) * page_size).all()
             article_output = []
             for article in data:
                 article_output.append(
@@ -43,7 +45,7 @@ class ArticleRepository:
                         createdAt=article.createdAt,
                     )
                 )
-            return article_output
+            return article_output, total_count
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 

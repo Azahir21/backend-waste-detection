@@ -18,11 +18,17 @@ class ArticleController:
         self.article_repository = article_repository
         self.jwt_service = jwt_service
 
-    def get_articles(self):
-        data = self.article_repository.get_all_articles()
+    def get_articles(self, page: int, page_size: int):
+        data, total_count = self.article_repository.get_all_articles(page, page_size)
         for article in data:
             article.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/article-image/{article.image.split('/')[-1]}"
-        return data
+        return {
+            "data": data,
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_page": (total_count + page_size - 1) // page_size,
+        }
 
     def get_article_by_title(self, article_title: str):
         data = self.article_repository.find_article_by_title(article_title)
