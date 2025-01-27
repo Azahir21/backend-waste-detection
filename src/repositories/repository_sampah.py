@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from geoalchemy2.shape import to_shape
 from config.models.badge_model import Badge
 from config.models.point_model import Point
+from config.schemas.common_schema import TokenData
 from config.schemas.sampah_schema import (
     CountObject,
     InputSampah,
@@ -124,7 +125,7 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_all_sampah(self, data_type: str):
+    async def get_all_sampah(self, data_type: str, status: str):
         try:
             query = self.db.query(sampah_model.Sampah).options(
                 joinedload(sampah_model.Sampah.sampah_items).joinedload(
@@ -136,6 +137,11 @@ class SampahRepository:
                 query = query.filter(sampah_model.Sampah.isGarbagePile == True)
             elif data_type == "garbage_pcs":
                 query = query.filter(sampah_model.Sampah.isGarbagePile == False)
+
+            if status == "pickup_true":
+                query = query.filter(sampah_model.Sampah.isPickup == True)
+            elif status == "pickup_false":
+                query = query.filter(sampah_model.Sampah.isPickup == False)
 
             sampahs = query.all()
 
@@ -163,7 +169,7 @@ class SampahRepository:
                             captureTime=sampah.captureTime,
                             pickupAt=sampah.pickupAt,
                             is_pickup=sampah.isPickup,
-                            is_pickup_by_user=sampah.pickupByUser,
+                            pickup_by_user=sampah.pickupByUser,
                             point=sampah.point,
                             total_sampah=len(sampah_items_list),
                             sampah_items=sampah_items_list,
@@ -208,7 +214,7 @@ class SampahRepository:
                 captureTime=sampah.captureTime,
                 pickupAt=sampah.pickupAt,
                 is_pickup=sampah.isPickup,
-                is_pickup_by_user=sampah.pickupByUser,
+                pickup_by_user=sampah.pickupByUser,
                 point=sampah.point,
                 total_sampah=len(sampah_items_list),
                 sampah_items=sampah_items_list,
@@ -229,7 +235,7 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_sampah_timeseries(self, data_type, start_date, end_date):
+    async def get_sampah_timeseries(self, data_type, status, start_date, end_date):
         try:
             query = (
                 self.db.query(sampah_model.Sampah)
@@ -246,6 +252,11 @@ class SampahRepository:
                 query = query.filter(sampah_model.Sampah.isGarbagePile == True)
             elif data_type == "garbage_pcs":
                 query = query.filter(sampah_model.Sampah.isGarbagePile == False)
+
+            if status == "pickup_true":
+                query = query.filter(sampah_model.Sampah.isPickup == True)
+            elif status == "pickup_false":
+                query = query.filter(sampah_model.Sampah.isPickup == False)
 
             sampahs = query.all()
 
@@ -272,7 +283,7 @@ class SampahRepository:
                             captureTime=sampah.captureTime,
                             pickupAt=sampah.pickupAt,
                             is_pickup=sampah.isPickup,
-                            is_pickup_by_user=sampah.pickupByUser,
+                            pickup_by_user=sampah.pickupByUser,
                             point=sampah.point,
                             total_sampah=len(sampah_items_list),
                             sampah_items=sampah_items_list,
@@ -296,3 +307,47 @@ class SampahRepository:
             else:
                 object_summary[name] = CountObject(name=name, count=1, point=points)
         return list(object_summary.values())
+
+    async def pickup_garbage(self, token: TokenData, sampah_id: int):
+        try:
+            sampah = self.db.query(sampah_model.Sampah).filter(
+                sampah_model.Sampah.id == sampah_id
+            )
+            if not sampah.first():
+                raise HTTPException(status_code=404, detail="Sampah not found")
+            if sampah.first().isPickup:
+                raise HTTPException(status_code=400, detail="Sampah already picked up")
+            sampah.update(
+                {
+                    "isPickup": True,
+                    "pickupAt": datetime.now(),
+                    "pickupByUser": token.name,
+                }
+            )
+            self.db.commit()
+            return {"detail": "Success Update Sampah Status"}
+        except SQLAlchemyError:
+            self.db.rollback()
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def unpickup_garbage(self, token: TokenData, sampah_id: int):
+        try:
+            sampah = self.db.query(sampah_model.Sampah).filter(
+                sampah_model.Sampah.id == sampah_id
+            )
+            if not sampah.first():
+                raise HTTPException(status_code=404, detail="Sampah not found")
+            if not sampah.first().isPickup:
+                raise HTTPException(status_code=400, detail="Sampah already unpicked")
+            sampah.update(
+                {
+                    "isPickup": False,
+                    "pickupAt": None,
+                    "pickupByUser": None,
+                }
+            )
+            self.db.commit()
+            return {"detail": "Success Update Sampah Status"}
+        except SQLAlchemyError:
+            self.db.rollback()
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)

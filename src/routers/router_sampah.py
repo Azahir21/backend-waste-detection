@@ -14,19 +14,21 @@ sampah_router = APIRouter(prefix="/api/v1", tags=["Sampah"])
 async def get_all_user_sampah(
     token: Annotated[TokenData, Depends(get_current_user)],
     data_type: str = Query("all"),
+    status: str = Query("all"),
     sampah_controller: SampahController = Depends(),
 ):
-    return await sampah_controller.get_all_sampah(token, data_type)
+    return await sampah_controller.get_all_sampah(token, data_type, status)
 
 
 @sampah_router.get("/sampah/timeseries")
 async def get_sampah_timeseries(
     token: Annotated[TokenData, Depends(get_current_user)],
     data_type: str = Query("all"),
+    status: str = Query("all"),
     start_date: datetime = Query(...),
     end_date: datetime = Query(...),
     sampah_controller: SampahController = Depends(),
 ):
     return await sampah_controller.get_sampah_timeseries(
-        token, data_type, start_date, end_date
+        token, data_type, status, start_date, end_date
     )

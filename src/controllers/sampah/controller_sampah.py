@@ -44,8 +44,8 @@ class SampahController:
         data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
         return data
 
-    async def get_all_sampah(self, token: TokenData, data_type: str):
-        data = await self.sampah_repository.get_all_sampah(data_type)
+    async def get_all_sampah(self, token: TokenData, data_type: str, status: str):
+        data = await self.sampah_repository.get_all_sampah(data_type, status)
         for item in data:
             item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
@@ -87,11 +87,22 @@ class SampahController:
         return await self.sampah_repository.insert_new_sampah(input_sampah, user.id)
 
     async def get_sampah_timeseries(
-        self, token: TokenData, data_type: str, start_date: datetime, end_date: datetime
+        self,
+        token: TokenData,
+        data_type: str,
+        status: str,
+        start_date: datetime,
+        end_date: datetime,
     ):
         data = await self.sampah_repository.get_sampah_timeseries(
-            data_type, start_date, end_date
+            data_type, status, start_date, end_date
         )
         for item in data:
             item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
+
+    async def pickup_garbage(self, token: TokenData, sampah_id: int):
+        return await self.sampah_repository.pickup_garbage(token, sampah_id)
+
+    async def unpickup_garbage(self, token: TokenData, sampah_id: int):
+        return await self.sampah_repository.unpickup_garbage(token, sampah_id)

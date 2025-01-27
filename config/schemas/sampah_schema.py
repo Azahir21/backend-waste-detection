@@ -51,7 +51,7 @@ class OutputSampahDetail(BaseModel):
     captureTime: datetime.datetime
     is_pickup: bool
     pickupAt: Optional[datetime.datetime]  # Allowing None for pickupAt
-    is_pickup_by_user: Optional[str]  # Allowing None for is_pickup_by_user
+    pickup_by_user: Optional[str]  # Allowing None for is_pickup_by_user
     point: int
     total_sampah: int
     sampah_items: List[OutputSampahItem]
