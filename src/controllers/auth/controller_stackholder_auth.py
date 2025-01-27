@@ -124,10 +124,12 @@ class AuthStackholderController:
             "users": [
                 OutputAllUser(
                     id=user.id,
+                    full_name=user.fullName,
+                    gender=user.jenisKelamin,
                     username=user.username,
                     email=user.email,
                     role=user.role,
-                    active=user.active,
+                    status=user.active,
                 )
                 for user in all_user
             ],

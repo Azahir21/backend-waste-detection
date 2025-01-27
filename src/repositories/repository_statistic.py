@@ -135,6 +135,7 @@ class StatisticRepository:
 
             result = (
                 query.group_by(Sampah.id, Sampah.isGarbagePile, Sampah.pickupByUser)
+                .order_by(Sampah.id.desc())
                 .offset((page - 1) * page_size)
                 .limit(page_size)
                 .all()
@@ -218,6 +219,7 @@ class StatisticRepository:
 
             result = (
                 query.group_by(Sampah.id, Sampah.isGarbagePile, Sampah.pickupByUser)
+                .order_by(Sampah.id.desc())
                 .offset((page - 1) * page_size)
                 .limit(page_size)
                 .all()

@@ -101,8 +101,8 @@ class UserRepository:
         try:
             # Calculate offsets
             offset = (page - 1) * page_size
-            # Fetch paginated users
-            query = self.db.query(user_model.User)
+            # Fetch paginated users sorted by user id
+            query = self.db.query(user_model.User).order_by(user_model.User.id.asc())
             total_count = query.count()
             users = query.offset(offset).limit(page_size).all()
             return users, total_count

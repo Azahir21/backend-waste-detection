@@ -31,7 +31,9 @@ class OutputLogin(BaseModel):
 
 class OutputAllUser(BaseModel):
     id: int
+    full_name: str
+    gender: str
     username: str
     email: str
     role: str
-    active: bool
+    status: bool
