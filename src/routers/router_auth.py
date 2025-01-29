@@ -29,6 +29,7 @@ async def user_login(
 async def user_register(
     input_user: InputUser, user_controller: AuthController = Depends()
 ):
+    input_user.role = "user"
     await user_controller.insert_new_user(input_user)
     return StandardResponse(detail="Success Register User")
 

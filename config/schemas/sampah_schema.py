@@ -38,6 +38,7 @@ class OutputSampah(BaseModel):
     address: str
     captureTime: datetime.datetime
     point: int
+    isGarbagePile: bool
 
     class Config:
         from_attributes = True
