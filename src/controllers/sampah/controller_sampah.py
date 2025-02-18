@@ -11,6 +11,8 @@ from src.controllers.service_common import (
 )
 from src.repositories.repository_user import UserRepository
 from src.repositories.repository_sampah import SampahRepository
+import os
+import requests
 
 
 class SampahController:
@@ -81,10 +83,22 @@ class SampahController:
                     status_code=400,
                     detail="Upload within 15 meters and 15 minutes detected",
                 )
-        input_sampah.image = save_image_base64_to_local(
-            input_sampah.image, input_sampah.filename, folder="garbage_image"
-        )
+        input_sampah.image_url = await self.download_image(input_sampah.image_url)
         return await self.sampah_repository.insert_new_sampah(input_sampah, user.id)
+
+    async def download_image(self, image_url: str):
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=response.status_code, detail="Failed to download image"
+            )
+        image_data = response.content
+        filename = os.path.basename(image_url)
+        file_path = os.path.join("assets", "garbage_image", filename)
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+        file_path = f"assets/garbage_image/{filename}"
+        return file_path
 
     async def get_sampah_timeseries(
         self,

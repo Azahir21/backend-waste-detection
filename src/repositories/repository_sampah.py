@@ -40,7 +40,7 @@ class SampahRepository:
             new_sampah = sampah_model.Sampah(
                 userId=user_id,
                 address=input_sampah.address,
-                imagePath=input_sampah.image,
+                imagePath=input_sampah.image_url,
                 geom=f"POINT({input_sampah.longitude} {input_sampah.latitude})",
                 captureTime=input_sampah.capture_date,
                 point=input_sampah.point,

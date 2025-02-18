@@ -26,8 +26,7 @@ class InputSampah(BaseModel):
     longitude: float
     latitude: float
     point: int
-    image: str
-    filename: str
+    image_url: str
     is_waste_pile: bool
     capture_date: datetime.datetime
     sampah_items: List[InputSampahItem]

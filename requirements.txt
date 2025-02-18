@@ -12,3 +12,4 @@ geoalchemy2[shapely]
 geopy
 pillow
 beautifulsoup4
+requests
