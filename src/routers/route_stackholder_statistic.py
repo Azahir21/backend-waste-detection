@@ -67,19 +67,3 @@ async def statistic_get_data(
         page,
         page_size,
     )
-
-
-@statistic_stackholder_router.get("/data_statistic_timeseries")
-async def statistic_get_data_timeseries(
-    token: Annotated[TokenData, Depends(get_current_user)],
-    data_type: str = Query("all"),  # Data type (default all)
-    status: str = Query("all"),  # Status (default all)
-    start_date: datetime.datetime = Query(),
-    end_date: datetime.datetime = Query(),
-    page: int = Query(1, ge=1),  # Page number (default 1)
-    page_size: int = Query(10, ge=1, le=100),  # Page size (default 10, max 100)
-    statistic_controller: StatisticController = Depends(),
-):
-    return await statistic_controller.get_data_statistic_timeseries(
-        token, data_type, status, start_date, end_date, page, page_size
-    )

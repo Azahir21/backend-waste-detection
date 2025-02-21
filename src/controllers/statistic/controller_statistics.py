@@ -58,30 +58,3 @@ class StatisticController:
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-
-    async def get_data_statistic_timeseries(
-        self, token, data_type, status, start_date, end_date, page: int, page_size: int
-    ):
-        try:
-            data, total_count = (
-                await self.statistic_repository.get_data_statistic_timeseries(
-                    token, data_type, status, start_date, end_date, page, page_size
-                )
-            )
-            total_pages = (total_count + page_size - 1) // page_size
-            return {
-                "data": data,
-                "total_count": total_count,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": total_pages,
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    async def get_sampah_detail(self, token, sampah_id):
-        data = await self.sampah_repository.get_sampah_detail(sampah_id)
-        if data is None:
-            raise HTTPException(status_code=404, detail="Sampah not found")
-        data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
-        return data
