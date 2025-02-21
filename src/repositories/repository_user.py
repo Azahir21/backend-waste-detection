@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import Depends, HTTPException
 from config.database import get_db
 from config.models import user_model, point_model
+from sqlalchemy import or_, cast, String
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -97,12 +98,45 @@ class UserRepository:
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
-    async def get_all_user(self, page: int, page_size: int):
+    async def get_all_user(
+        self, page: int, page_size: int, sort_by: str, sort_order: str, search: str
+    ):
         try:
-            # Calculate offsets
             offset = (page - 1) * page_size
-            # Fetch paginated users sorted by user id
-            query = self.db.query(user_model.User).order_by(user_model.User.id.asc())
+            query = self.db.query(user_model.User)
+
+            # Apply search filter if provided (searching across multiple fields)
+            if search:
+                search_expr = f"%{search}%"
+                query = query.filter(
+                    or_(
+                        user_model.User.fullName.ilike(search_expr),
+                        user_model.User.jenisKelamin.ilike(search_expr),
+                        user_model.User.username.ilike(search_expr),
+                        user_model.User.email.ilike(search_expr),
+                        user_model.User.role.ilike(search_expr),
+                        cast(user_model.User.active, String).ilike(search_expr),
+                    )
+                )
+
+            # Define sort mapping for allowed fields
+            sort_mapping = {
+                "id": user_model.User.id,
+                "fullname": user_model.User.fullName,
+                "gender": user_model.User.jenisKelamin,
+                "username": user_model.User.username,
+                "email": user_model.User.email,
+                "role": user_model.User.role,
+                "status": user_model.User.active,
+            }
+            # Use lower-case key to match mapping; default to id if key is not valid.
+            sort_col = sort_mapping.get(sort_by.lower(), user_model.User.id)
+            # Apply primary sort, then a secondary sort by id descending to ensure consistent order
+            if sort_order.lower() == "asc":
+                query = query.order_by(sort_col.asc(), user_model.User.id.desc())
+            else:
+                query = query.order_by(sort_col.desc(), user_model.User.id.desc())
+
             total_count = query.count()
             users = query.offset(offset).limit(page_size).all()
             return users, total_count

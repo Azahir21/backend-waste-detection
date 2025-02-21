@@ -110,14 +110,24 @@ class AuthStackholderController:
             "detail": f"Password for user: {reset_password.username} has been reset"
         }
 
-    async def get_all_user(self, tokenData: TokenData, page: int, page_size: int):
+    async def get_all_user(
+        self,
+        token: TokenData,
+        page: int,
+        page_size: int,
+        sort_by: str,
+        sort_order: str,
+        search: str,
+    ):
         # First check user permissions
-        found_user = await self.user_repository.find_user_by_username(tokenData.name)
+        found_user = await self.user_repository.find_user_by_username(token.name)
         if found_user.role != "admin":
-            raise HTTPException(status_code=403, detail="User is not a Admin")
+            raise HTTPException(status_code=403, detail="User is not an Admin")
 
-        # Fetch paginated users
-        all_user, total_count = await self.user_repository.get_all_user(page, page_size)
+        # Fetch paginated users with sorting and search
+        all_user, total_count = await self.user_repository.get_all_user(
+            page, page_size, sort_by, sort_order, search
+        )
 
         # Format the response
         return {

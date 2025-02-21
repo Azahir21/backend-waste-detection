@@ -29,7 +29,7 @@ async def user_login(
     )
 
 
-@auth_stackholder_router.post("/register")
+@auth_stackholder_router.post("/auth/register")
 async def user_register(
     input_user: InputUser, user_controller: AuthController = Depends()
 ):
@@ -78,13 +78,23 @@ async def user_reset_password(
 @auth_stackholder_router.get("/get_all_user")
 async def user_get_all(
     token: Annotated[TokenData, Depends(get_current_user)],
-    page: int = Query(1, ge=1),  # Page number (default is 1, must be >= 1)
+    page: int = Query(1, ge=1, description="Page number (default is 1)"),
     page_size: int = Query(
-        10, ge=1, le=100
-    ),  # Page size (default is 10, must be 1-100)
+        10, ge=1, le=100, description="Page size (default is 10, max 100)"
+    ),
+    sort_by: str = Query(
+        "id",
+        description="Sort by field. Options: id, fullname, gender, username, email, role, status",
+    ),
+    sort_order: str = Query("asc", description="Sort order: asc or desc"),
+    search: str = Query(
+        "", description="Search query for all fields (empty means no search)"
+    ),
     user_controller: AuthController = Depends(),
 ):
-    return await user_controller.get_all_user(token, page, page_size)
+    return await user_controller.get_all_user(
+        token, page, page_size, sort_by, sort_order, search
+    )
 
 
 # @auth_stackholder_router.delete("/delete")
