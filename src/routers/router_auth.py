@@ -3,7 +3,12 @@ from fastapi import Depends
 from fastapi import APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 
-from config.schemas.auth_schema import InputLogin, InputUser, OutputLogin
+from config.schemas.auth_schema import (
+    InputLogin,
+    InputUser,
+    OutputLogin,
+    ForgotPassword,
+)
 from config.schemas.common_schema import StandardResponse, TokenData
 from src.controllers.auth.controller_auth import AuthController
 from src.controllers.service_common import get_current_user
@@ -32,6 +37,16 @@ async def user_register(
     input_user.role = "user"
     await user_controller.insert_new_user(input_user)
     return StandardResponse(detail="Success Register User")
+
+
+@auth_router.post("/forgot-password")
+async def forgot_password(
+    forgot_password: ForgotPassword,
+    user_controller: AuthController = Depends(),
+):
+    return await user_controller.forgot_password(
+        forgot_password.username, forgot_password.email, forgot_password.password
+    )
 
 
 @auth_router.get("/profile")

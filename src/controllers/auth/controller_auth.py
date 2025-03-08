@@ -70,6 +70,15 @@ class AuthController:
         except Exception as e:
             raise HTTPException(status_code=404, detail="Invalid Token")
 
+    async def forgot_password(self, username: str, email: str, password: str):
+        # search username and email, if match then update password
+        found_user = await self.user_repository.match_username_email(username, email)
+        if found_user is None:
+            raise HTTPException(status_code=404, detail="Invalid Username or Email")
+        found_user.password = self.security_service.get_password_hash(password)
+        await self.user_repository.update_user(found_user)
+        return {"message": "Password Updated"}
+
     # async def delete_user(self, id: int):
     #     try:
     #         await self.user_repository.delete_user(id)

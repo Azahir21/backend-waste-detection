@@ -37,3 +37,9 @@ class OutputAllUser(BaseModel):
     email: str
     role: str
     status: bool
+
+
+class ForgotPassword(BaseModel):
+    username: str
+    email: str
+    password: str
