@@ -4,7 +4,7 @@ python-multipart
 python-dotenv
 SQLAlchemy
 GeoAlchemy2 == 0.14.6
-psycopg2
+psycopg2-binary
 passlib[bcrypt]
 python-jose[cryptography]
 pydantic-extra-types
@@ -13,3 +13,10 @@ geopy
 pillow
 beautifulsoup4
 requests
+ultralytics
+exif
+reverse_geocoder
+pycountry
+onnxruntime
+numpy
+opencv-python

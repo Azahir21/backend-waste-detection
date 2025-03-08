@@ -1,3 +1,4 @@
+import datetime
 from typing_extensions import Annotated
 from fastapi import (
     APIRouter,
@@ -61,4 +62,28 @@ async def get_sampah_timeseries(
 ):
     return await sampah_controller.get_sampah_timeseries(
         token, time_series.start_date, time_series.end_date
+    )
+
+
+@sampah_user_router.post("/sampah-v2")
+async def post_sampah_v2(
+    lang: str = Query("id"),
+    longitude: float = Query(...),
+    latitude: float = Query(...),
+    address: str = Query(...),
+    use_garbage_pile_model: bool = Query(False),
+    capture_date: datetime.datetime = Query(...),
+    file: UploadFile = File(...),
+    token: TokenData = Depends(get_current_user),
+    sampah_controller: SampahController = Depends(),
+):
+    return await sampah_controller.post_sampah_v2(
+        token,
+        lang,
+        longitude,
+        latitude,
+        address,
+        use_garbage_pile_model,
+        capture_date,
+        file,
     )

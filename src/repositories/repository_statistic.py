@@ -189,6 +189,7 @@ class StatisticRepository:
                 func.count(SampahItem.id).label("waste_count"),
                 Sampah.pickupByUser.label("pickup_by_user"),
                 Sampah.isPickup.label("pickup_status"),
+                Sampah.imagePath.label("image_url"),
             ).join(SampahItem, Sampah.id == SampahItem.sampahId)
 
             # Filter by status
@@ -246,6 +247,7 @@ class StatisticRepository:
                 "waste_count": func.count(SampahItem.id),
                 "pickup_by_user": Sampah.pickupByUser,
                 "pickup_at": Sampah.pickupAt,
+                "image_url": Sampah.imagePath,
             }
             sort_col = sort_mapping.get(sort_by, Sampah.id)
             order_clause = (
@@ -275,6 +277,7 @@ class StatisticRepository:
                     "waste_count": item.waste_count,
                     "pickup_by_user": item.pickup_by_user,
                     "pickup_status": item.pickup_status,
+                    "image_url": f"http:/127.0.0.1:8000/garbage-image/{item.image_url.split('/')[-1]}",
                 }
                 for item in result
             ]

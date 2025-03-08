@@ -142,3 +142,26 @@ class UserRepository:
             return users, total_count
         except SQLAlchemyError as e:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def match_username_email(self, username: str, email: str):
+        try:
+            return (
+                self.db.query(user_model.User)
+                .filter(
+                    user_model.User.username == username,
+                    user_model.User.email == email,
+                )
+                .first()
+            )
+        except SQLAlchemyError as e:
+            print(e)
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def update_user(self, user: user_model.User):
+        try:
+            user.updatedAt = datetime.now()
+            self.db.commit()
+            return user
+        except SQLAlchemyError as e:
+            print(e)
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)

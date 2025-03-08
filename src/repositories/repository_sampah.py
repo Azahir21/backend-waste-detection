@@ -224,6 +224,17 @@ class SampahRepository:
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
 
+    async def find_same_capture_time(self, user_id, capture_time):
+        try:
+            return (
+                self.db.query(sampah_model.Sampah)
+                .filter(sampah_model.Sampah.userId == user_id)
+                .filter(sampah_model.Sampah.captureTime == capture_time)
+                .all()
+            )
+        except SQLAlchemyError:
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
     async def find_uploads_within_timeframe(self, user_id, time_threshold):
         try:
             return (
