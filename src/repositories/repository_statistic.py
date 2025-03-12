@@ -277,7 +277,11 @@ class StatisticRepository:
                     "waste_count": item.waste_count,
                     "pickup_by_user": item.pickup_by_user,
                     "pickup_status": item.pickup_status,
-                    "image_url": f"http:/127.0.0.1:8000/garbage-image/{item.image_url.split('/')[-1]}",
+                    "image_url": (
+                        f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected_image/{item.image_url.split('/')[-1]}"
+                        if "detected_image" in item.image_url
+                        else f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image_url.split('/')[-1]}"
+                    ),
                 }
                 for item in result
             ]

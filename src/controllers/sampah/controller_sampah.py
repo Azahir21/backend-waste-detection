@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, UploadFile
@@ -41,13 +42,19 @@ class SampahController:
         data = await self.sampah_repository.get_sampah_detail(sampah_id)
         if data is None:
             raise HTTPException(status_code=404, detail="Sampah not found")
-        data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
+        if "detected_image" in data.image:
+            data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{data.image.split('/')[-1]}"
+        else:
+            data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
         return data
 
     async def get_all_sampah(self, token: TokenData, data_type: str, status: str):
         data = await self.sampah_repository.get_all_sampah(data_type, status)
         for item in data:
-            item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
+            if "detected_image" in item.image:
+                item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{item.image.split('/')[-1]}"
+            else:
+                item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
 
     async def store_image(self, file):
@@ -110,7 +117,10 @@ class SampahController:
             data_type, status, start_date, end_date
         )
         for item in data:
-            item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
+            if "detected_image" in item.image:
+                item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{item.image.split('/')[-1]}"
+            else:
+                item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
 
     async def pickup_garbage(self, token: TokenData, sampah_id: int):
@@ -130,31 +140,34 @@ class SampahController:
         capture_date: datetime,
         file: UploadFile,
     ):
+        # Validate user
         user = await self.user_repository.find_user_by_username(token.name)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
-        same_capture = await self.sampah_repository.find_same_capture_time(
-            user.id, capture_date
+
+        # Define time thresholds
+        time_threshold = capture_date - timedelta(minutes=15)
+
+        # Run the two independent database queries concurrently:
+        same_capture, previous_uploads = await asyncio.gather(
+            self.sampah_repository.find_same_capture_time(user.id, capture_date),
+            self.sampah_repository.find_uploads_within_timeframe(
+                user.id, time_threshold
+            ),
         )
+
         if same_capture:
             raise HTTPException(
                 status_code=400,
                 detail="Image with the same capture time already exists",
             )
 
-        current_time = capture_date
-        time_threshold = current_time - timedelta(minutes=15)
+        # Check if any previous upload is within 15 meters and 15 minutes
 
-        previous_uploads = await self.sampah_repository.find_uploads_within_timeframe(
-            user.id, time_threshold
-        )
-
-        # chack if there is any upload within 15 meters and 15 minutes
         for upload in previous_uploads:
-            geom_wkt = to_shape(upload.geom).wkt
-            previous_longitude, previous_latitude = (
-                geom_wkt.replace("POINT (", "").replace(")", "").split()
-            )
+            # Convert the WKT string to extract coordinates
+            geom = to_shape(upload.geom).wkt
+            previous_longitude, previous_latitude = geom.x, geom.y
             upload_location = (previous_latitude, previous_longitude)
             current_location = (latitude, longitude)
             distance = geodesic(upload_location, current_location).meters
@@ -163,12 +176,17 @@ class SampahController:
                     status_code=400,
                     detail="Upload within 15 meters and 15 minutes detected",
                 )
+
+        # Rename and store the file
         file.filename = f"{token.name}_{file.filename}"
         filename = insert_image_to_local(file, folder="original_image")
-        processed_imagepath, total_point, list_sampah_items = process_image(
-            filename, use_garbage_pile_model
+
+        # Offload the CPU-bound image processing to a separate thread
+        processed_imagepath, total_point, list_sampah_items = await asyncio.to_thread(
+            process_image, filename, use_garbage_pile_model
         )
 
+        # Prepare the input for new sampah entry
         input_sampah = InputSampah(
             longitude=longitude,
             latitude=latitude,
@@ -179,9 +197,11 @@ class SampahController:
             is_waste_pile=use_garbage_pile_model,
             sampah_items=list_sampah_items,
         )
+
+        # Insert the new sampah record (await the async DB operation)
         result = await self.sampah_repository.insert_new_sampah(input_sampah, user.id)
 
-        # Define messages in both languages
+        # Define multilingual messages
         messages = {
             "id": {
                 "high": f"Selamat! Anda mendapat {total_point} poin!",
@@ -199,11 +219,8 @@ class SampahController:
                 "low": f"ご協力ありがとうございます！{total_point}ポイントを獲得しました。",
             },
         }
-
-        # Default to Indonesian, but could be made configurable
         lang = lang if lang in messages else "id"
 
-        message = ""
         if total_point >= 100:
             message = messages[lang]["high"]
         elif total_point >= 50:
