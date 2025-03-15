@@ -7,7 +7,10 @@ from geoalchemy2.shape import to_shape
 from config.schemas.common_schema import TokenData
 from config.schemas.sampah_schema import InputSampah
 from src.controllers.sampah.service_predict import process_image
-from src.controllers.service_common import insert_image_to_local
+from src.controllers.service_common import (
+    insert_image_to_local,
+    insert_image_to_local_base64,
+)
 from src.repositories.repository_user import UserRepository
 from src.repositories.repository_sampah import SampahRepository
 import os
@@ -123,8 +126,12 @@ class SampahController:
                 item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image.split('/')[-1]}"
         return data
 
-    async def pickup_garbage(self, token: TokenData, sampah_id: int):
-        return await self.sampah_repository.pickup_garbage(token, sampah_id)
+    async def pickup_garbage(self, token: TokenData, sampah_id: int, image_base64: str):
+        # save image to local and get the path
+        image_path = insert_image_to_local_base64(
+            image_base64, f"{sampah_id}_pickup_evidence", folder="pickup_image"
+        )
+        return await self.sampah_repository.pickup_garbage(token, sampah_id, image_path)
 
     async def unpickup_garbage(self, token: TokenData, sampah_id: int):
         return await self.sampah_repository.unpickup_garbage(token, sampah_id)

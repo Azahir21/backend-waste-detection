@@ -40,11 +40,12 @@ async def get_sampah_timeseries(
 async def pickup_garbage(
     token: Annotated[TokenData, Depends(get_current_user)],
     sampah_id: int = Path(...),
+    image_base64: str = Body(...),
     sampah_controller: SampahController = Depends(),
 ):
     if token.role != "stackholder" and token.role != "admin":
         raise HTTPException(status_code=400, detail="Not Permitted")
-    return await sampah_controller.pickup_garbage(token, sampah_id)
+    return await sampah_controller.pickup_garbage(token, sampah_id, image_base64)
 
 
 @sampah_stackholder_router.put("/sampah/unpickup/{sampah_id}")

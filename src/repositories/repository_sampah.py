@@ -321,7 +321,7 @@ class SampahRepository:
                 object_summary[name] = CountObject(name=name, count=1, point=points)
         return list(object_summary.values())
 
-    async def pickup_garbage(self, token: TokenData, sampah_id: int):
+    async def pickup_garbage(self, token: TokenData, sampah_id: int, image_path: str):
         try:
             sampah = self.db.query(sampah_model.Sampah).filter(
                 sampah_model.Sampah.id == sampah_id
@@ -335,6 +335,7 @@ class SampahRepository:
                     "isPickup": True,
                     "pickupAt": datetime.now(),
                     "pickupByUser": token.name,
+                    "evidencePath": image_path,
                 }
             )
             self.db.commit()

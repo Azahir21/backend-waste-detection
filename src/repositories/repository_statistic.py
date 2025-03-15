@@ -20,7 +20,7 @@ class StatisticRepository:
 
     DATABASE_ERROR_MESSAGE = "Database error"
 
-    async def get_total_statistic(self, token):
+    async def get_total_statistic(self, token: TokenData):
         try:
             # Original queries for totals
             query_collected_garbage_pile = (
@@ -116,8 +116,30 @@ class StatisticRepository:
                 .all()
             )
 
+            # User-specific historical data for the past 3 months
+            user_historical_data = (
+                self.db.query(
+                    relative_week_index_expr.label("week_index"),
+                    month_expr.label("month_name"),
+                    week_in_month_expr.label("week_in_month"),
+                    func.count(Sampah.id).label("total_transported"),
+                )
+                .filter(
+                    Sampah.isPickup == True,
+                    Sampah.pickupAt.isnot(None),
+                    Sampah.pickupAt >= three_months_ago,
+                    Sampah.pickupByUser == token.name,  # Filter by the specific user
+                )
+                .group_by(relative_week_index_expr, month_expr, week_in_month_expr)
+                .order_by(relative_week_index_expr)
+                .all()
+            )
+
             # Map the aggregated results by their week index
             aggregated = {int(item.week_index): item for item in historical_data}
+            user_aggregated = {
+                int(item.week_index): item for item in user_historical_data
+            }
 
             # Determine the last week in the period (Monday of current week)
             now = datetime.datetime.now(datetime.timezone.utc)
@@ -125,6 +147,7 @@ class StatisticRepository:
 
             # Build a complete list of weeks from period_start to current_week
             week_list = []
+            user_week_list = []
             current_date = period_start
             week_idx = 1
             while current_date <= current_week:
@@ -137,6 +160,7 @@ class StatisticRepository:
                 )
                 week_in_month = (current_date - first_monday).days // 7
 
+                # For all users data
                 if week_idx in aggregated:
                     total_transported = aggregated[week_idx].total_transported
                 else:
@@ -150,6 +174,22 @@ class StatisticRepository:
                         "total_transported": total_transported,
                     }
                 )
+
+                # For specific user data
+                if week_idx in user_aggregated:
+                    user_total_transported = user_aggregated[week_idx].total_transported
+                else:
+                    user_total_transported = 0
+
+                user_week_list.append(
+                    {
+                        "week_index": week_idx,
+                        "month_name": month_name,
+                        "week_in_month": week_in_month,
+                        "total_transported": user_total_transported,
+                    }
+                )
+
                 week_idx += 1
                 current_date += datetime.timedelta(days=7)
 
@@ -158,7 +198,8 @@ class StatisticRepository:
                 "collected_garbage_pcs": query_collected_garbage_pcs,
                 "not_collected_garbage_pile": query_not_collected_garbage_pile,
                 "not_collected_garbage_pcs": query_not_collected_garbage_pcs,
-                "historical_data": week_list,
+                "all_historical_data": week_list,
+                "user_historical_data": user_week_list,
             }
 
         except Exception as e:

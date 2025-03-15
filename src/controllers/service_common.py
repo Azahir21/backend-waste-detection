@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import io
 from PIL import Image
@@ -18,6 +19,28 @@ def get_current_user(
     service_jwt: service_jwt.JWTService = Depends(),
 ):
     return TokenData.parse_obj(service_jwt.decode_access_token(token))
+
+
+def insert_image_to_local_base64(
+    image_data: str, filename: str, folder: str = "default"
+):
+    try:
+        image_data_dict = json.loads(image_data)
+        image_data_dict["image_base64"] = image_data_dict["image_base64"].split(",")[1]
+        base64_string = image_data_dict["image_base64"]
+        decoded_image = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(decoded_image))
+        # Convert RGBA to RGB mode for JPEG compatibility
+        if image.mode in ("RGBA", "LA"):
+            image = image.convert("RGB")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{timestamp}_{filename}.jpg"
+        output_path = f"assets/{folder}/{filename}"
+        image.save(output_path, "JPEG", quality=85, optimize=True, progressive=True)
+        return output_path
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Error saving image file")
 
 
 def insert_image_to_local(file: UploadFile, folder: str = "default"):
