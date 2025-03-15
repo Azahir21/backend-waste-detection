@@ -88,12 +88,14 @@ class SampahRepository:
                     self.db.commit()
                     self.db.refresh(user_point)
                     return {
+                        "id": new_sampah.id,
                         "detail": "Success Post Sampah",
                         "badge": new_badge.name,
                         "updated_badge": True,
                     }
 
             return {
+                "id": new_sampah.id,
                 "detail": "Success Post Sampah",
                 "badge": None,
                 "updated_badge": False,

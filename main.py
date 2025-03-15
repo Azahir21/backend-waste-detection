@@ -42,6 +42,11 @@ app.mount(
     StaticFiles(directory="assets/article"),
     name="article_image",
 )
+app.mount(
+    "/data",
+    StaticFiles(directory="assets/data"),
+    name="data",
+)
 
 app.include_router(auth_router)
 app.include_router(article_router)

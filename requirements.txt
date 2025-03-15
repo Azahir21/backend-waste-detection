@@ -20,3 +20,4 @@ pycountry
 onnxruntime
 numpy
 opencv-python
+XlsxWriter

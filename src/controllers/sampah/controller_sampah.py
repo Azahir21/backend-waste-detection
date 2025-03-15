@@ -201,22 +201,48 @@ class SampahController:
         # Insert the new sampah record (await the async DB operation)
         result = await self.sampah_repository.insert_new_sampah(input_sampah, user.id)
 
-        # Define multilingual messages
         messages = {
             "id": {
-                "high": f"Selamat! Anda mendapat {total_point} poin!",
-                "medium": f"Bagus! Anda mendapat {total_point} poin. Terus tingkatkan kontribusi Anda!",
-                "low": f"Terima kasih atas kontribusi Anda! Anda mendapat {total_point} poin.",
+                "high": {
+                    "title": "Wow, Kontribusi Luar Biasa! 🌟",
+                    "message": f"Anda mendapat {total_point} poin dari laporan ini.",
+                },
+                "medium": {
+                    "title": "Hebat, Terus Maju! 👏",
+                    "message": f"Anda mendapat {total_point} poin. Terus berkontribusi!",
+                },
+                "low": {
+                    "title": "Langkah Awal yang Baik! 👍",
+                    "message": f"Anda mendapat {total_point} poin dari kontribusi Anda.",
+                },
             },
             "en": {
-                "high": f"Congratulations! You earned {total_point} points!",
-                "medium": f"Good! You earned {total_point} points. Keep increasing your contribution!",
-                "low": f"Thank you for your contribution! You earned {total_point} points.",
+                "high": {
+                    "title": "Amazing Work, Champion! 🌟",
+                    "message": f"You earned {total_point} points from this report.",
+                },
+                "medium": {
+                    "title": "Great Progress, Keep Going! 👏",
+                    "message": f"You earned {total_point} points. Keep contributing!",
+                },
+                "low": {
+                    "title": "Every Bit Counts, Thanks! 👍",
+                    "message": f"You earned {total_point} points from your contribution.",
+                },
             },
             "jp": {
-                "high": f"おめでとうございます！{total_point}ポイントを獲得しました！",
-                "medium": f"良い！{total_point}ポイントを獲得しました。貢献度を上げ続けましょう！",
-                "low": f"ご協力ありがとうございます！{total_point}ポイントを獲得しました。",
+                "high": {
+                    "title": "素晴らしい成果です！🌟",
+                    "message": f"このレポートから{total_point}ポイントを獲得しました。",
+                },
+                "medium": {
+                    "title": "素敵な貢献、続けましょう！👏",
+                    "message": f"{total_point}ポイントを獲得。貢献を続けましょう！",
+                },
+                "low": {
+                    "title": "一歩前進、ありがとう！👍",
+                    "message": f"あなたの貢献から{total_point}ポイントを獲得しました。",
+                },
             },
         }
         lang = lang if lang in messages else "id"
@@ -229,7 +255,9 @@ class SampahController:
             message = messages[lang]["low"]
 
         return {
-            "message": message,
+            "title": message["title"],
+            "message": message["message"],
             "badge": result["badge"],
             "updated_badge": result["updated_badge"],
+            "report-id": result["id"],
         }

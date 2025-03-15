@@ -8,6 +8,7 @@ from geoalchemy2.shape import to_shape
 
 from config.models.sampah_item_model import SampahItem
 from config.models.sampah_model import Sampah
+from config.schemas.common_schema import TokenData
 
 
 class StatisticRepository:
@@ -287,6 +288,151 @@ class StatisticRepository:
             ]
 
             return result_list, total_count
+
+        except SQLAlchemyError as e:
+            print(f"Error: {e}")
+            raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
+
+    async def get_data_statistic_sheet(
+        self,
+        token: TokenData,
+        data_type: str,
+        status: str,
+        start_date,
+        end_date,
+        sort_by: str,
+        sort_order: str,
+        search: str,
+        user: bool,
+    ):
+        try:
+            # Build base query with join and aggregate
+            query = self.db.query(
+                Sampah.id,
+                Sampah.isGarbagePile.label("is_waste_pile"),
+                Sampah.address,
+                Sampah.geom,
+                Sampah.pickupAt.label("pickup_at"),
+                Sampah.captureTime.label("capture_time"),
+                func.count(SampahItem.id).label("waste_count"),
+                Sampah.pickupByUser.label("pickup_by_user"),
+                Sampah.isPickup.label("pickup_status"),
+                Sampah.imagePath.label("image_url"),
+            ).join(SampahItem, Sampah.id == SampahItem.sampahId)
+
+            # Filter by user if the user parameter is True
+            if user:
+                query = query.filter(
+                    Sampah.isPickup == True, Sampah.pickupByUser == token.name
+                )
+            # Otherwise apply standard status filter
+            else:
+                if status == "collected":
+                    query = query.filter(Sampah.isPickup == True)
+                elif status == "uncollected":
+                    query = query.filter(Sampah.isPickup == False)
+
+            # Filter by data type
+            if data_type == "garbage_pile":
+                query = query.filter(Sampah.isGarbagePile == True)
+            elif data_type == "garbage_pcs":
+                query = query.filter(Sampah.isGarbagePile == False)
+
+            # Filter by capture time start and/or end date
+            if start_date:
+                query = query.filter(Sampah.captureTime >= start_date)
+            if end_date:
+                query = query.filter(Sampah.captureTime <= end_date)
+
+            # Group by all non-aggregated fields
+            query = query.group_by(
+                Sampah.id,
+                Sampah.isGarbagePile,
+                Sampah.address,
+                Sampah.geom,
+                Sampah.pickupAt,
+                Sampah.captureTime,
+                Sampah.pickupByUser,
+                Sampah.isPickup,
+                Sampah.imagePath,  # Add image path to group by
+            )
+
+            # Apply search filter if provided (search only on address)
+            if search:
+                search_expr = f"%{search}%"
+                query = query.having(Sampah.address.ilike(search_expr))
+
+            # Define sort mapping for allowed fields
+            sort_mapping = {
+                "id": Sampah.id,
+                "is_waste_pile": Sampah.isGarbagePile,
+                "address": Sampah.address,
+                "pickup_status": Sampah.isPickup,
+                "capture_time": Sampah.captureTime,
+                "waste_count": func.count(SampahItem.id),
+                "pickup_by_user": Sampah.pickupByUser,
+                "pickup_at": Sampah.pickupAt,
+                "image_url": Sampah.imagePath,
+            }
+            sort_col = sort_mapping.get(sort_by, Sampah.id)
+
+            order_clause = (
+                sort_col.asc() if sort_order.lower() == "asc" else sort_col.desc()
+            )
+            query = query.order_by(order_clause, Sampah.id.desc())
+
+            # Create a subquery to count total matching groups
+            subq = query.subquery()
+            total_count = self.db.query(func.count()).select_from(subq).scalar()
+
+            if total_count == 0:
+                raise HTTPException(status_code=404, detail="No data found")
+
+            # Get all results
+            result = query.all()
+
+            # Format the result list
+            result_list = []
+            for item in result:
+                # Extract coordinates from WKT format if geom exists
+                maps_link = None
+                if item.geom:
+                    # Convert geometry to WKT
+                    wkt = to_shape(item.geom).wkt
+                    # Extract coordinates from WKT (format is typically "POINT(lon lat)")
+                    if wkt.startswith("POINT"):
+                        # Extract coordinates between parentheses
+                        coords = wkt.split("(")[1].split(")")[0]
+                        # Split by space and reverse order to get lat,lng format
+                        lon, lat = coords.split()
+                        # Create Google Maps link
+                        maps_link = f"https://www.google.com/maps/place/{lat},{lon}"
+
+                result_list.append(
+                    {
+                        "id": item.id,
+                        "waste type": (
+                            "Garbage Pile" if item.is_waste_pile else "Garbage Pieces"
+                        ),
+                        "address": item.address,
+                        "geom": to_shape(item.geom).wkt if item.geom else None,
+                        "pickup at": item.pickup_at,
+                        "capture time": item.capture_time,
+                        "waste count": item.waste_count,
+                        "pickup by user": item.pickup_by_user,
+                        "pickup status": (
+                            "Collected" if item.pickup_status else "Not Collected"
+                        ),
+                        "Waste Location": maps_link,
+                        "image_url": (
+                            f"http://localhost:8000/detected_image/{item.image_url.split('/')[-1]}"
+                            if "detected_image" in item.image_url
+                            else f"http://localhost:8000/garbage-image/{item.image_url.split('/')[-1]}"
+                        ),
+                    }
+                )
+
+            return result_list
 
         except SQLAlchemyError as e:
             print(f"Error: {e}")
