@@ -57,6 +57,7 @@ class OutputSampahDetail(BaseModel):
     sampah_items: List[OutputSampahItem]
     count_items: List[CountObject]
     image: str
+    evidence: str
 
 
 class RawData(BaseModel):

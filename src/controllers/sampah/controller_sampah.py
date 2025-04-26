@@ -49,11 +49,16 @@ class SampahController:
             data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{data.image.split('/')[-1]}"
         else:
             data.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{data.image.split('/')[-1]}"
+        if data.evidence:
+            data.evidence = f"https://jjmbm5rz-8000.asse.devtunnels.ms/evidence-image/{data.evidence.split('/')[-1]}"
         return data
 
     async def get_all_sampah(self, token: TokenData, data_type: str, status: str):
         data = await self.sampah_repository.get_all_sampah(data_type, status)
         for item in data:
+            if item.evidence:
+                item.evidence = f"https://jjmbm5rz-8000.asse.devtunnels.ms/pickup-image/{item.evidence.split('/')[-1]}"
+
             if "detected_image" in item.image:
                 item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{item.image.split('/')[-1]}"
             else:
@@ -120,6 +125,8 @@ class SampahController:
             data_type, status, start_date, end_date
         )
         for item in data:
+            if item.evidence:
+                item.evidence = f"https://jjmbm5rz-8000.asse.devtunnels.ms/evidence-image/{item.evidence.split('/')[-1]}"
             if "detected_image" in item.image:
                 item.image = f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected-image/{item.image.split('/')[-1]}"
             else:

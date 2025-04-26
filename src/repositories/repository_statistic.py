@@ -232,6 +232,7 @@ class StatisticRepository:
                 Sampah.pickupByUser.label("pickup_by_user"),
                 Sampah.isPickup.label("pickup_status"),
                 Sampah.imagePath.label("image_url"),
+                Sampah.evidencePath.label("evidence_url"),
             ).join(SampahItem, Sampah.id == SampahItem.sampahId)
 
             # Filter by status
@@ -262,6 +263,7 @@ class StatisticRepository:
                 Sampah.captureTime,
                 Sampah.pickupByUser,
                 Sampah.isPickup,
+                Sampah.imagePath,
             )
 
             # Apply search filter if provided (search across multiple fields)
@@ -290,6 +292,7 @@ class StatisticRepository:
                 "pickup_by_user": Sampah.pickupByUser,
                 "pickup_at": Sampah.pickupAt,
                 "image_url": Sampah.imagePath,
+                "evidence_url": Sampah.evidencePath,
             }
             sort_col = sort_mapping.get(sort_by, Sampah.id)
             order_clause = (
@@ -323,6 +326,11 @@ class StatisticRepository:
                         f"https://jjmbm5rz-8000.asse.devtunnels.ms/detected_image/{item.image_url.split('/')[-1]}"
                         if "detected_image" in item.image_url
                         else f"https://jjmbm5rz-8000.asse.devtunnels.ms/garbage-image/{item.image_url.split('/')[-1]}"
+                    ),
+                    "evidence_url": (
+                        f"https://jjmbm5rz-8000.asse.devtunnels.ms/evidence/{item.evidence_url.split('/')[-1]}"
+                        if item.evidence_url
+                        else None
                     ),
                 }
                 for item in result
@@ -359,6 +367,7 @@ class StatisticRepository:
                 Sampah.pickupByUser.label("pickup_by_user"),
                 Sampah.isPickup.label("pickup_status"),
                 Sampah.imagePath.label("image_url"),
+                Sampah.evidencePath.label("evidence_url"),
             ).join(SampahItem, Sampah.id == SampahItem.sampahId)
 
             # Filter by user if the user parameter is True
@@ -396,6 +405,7 @@ class StatisticRepository:
                 Sampah.pickupByUser,
                 Sampah.isPickup,
                 Sampah.imagePath,  # Add image path to group by
+                Sampah.evidencePath,  # Add evidence path to group by
             )
 
             # Apply search filter if provided (search only on address)
@@ -414,6 +424,7 @@ class StatisticRepository:
                 "pickup_by_user": Sampah.pickupByUser,
                 "pickup_at": Sampah.pickupAt,
                 "image_url": Sampah.imagePath,
+                "evidence_url": Sampah.evidencePath,
             }
             sort_col = sort_mapping.get(sort_by, Sampah.id)
 
@@ -469,6 +480,11 @@ class StatisticRepository:
                             f"http://localhost:8000/detected_image/{item.image_url.split('/')[-1]}"
                             if "detected_image" in item.image_url
                             else f"http://localhost:8000/garbage-image/{item.image_url.split('/')[-1]}"
+                        ),
+                        "evidence_url": (
+                            f"http://localhost:8000/evidence/{item.evidence_url.split('/')[-1]}"
+                            if item.evidence_url
+                            else None
                         ),
                     }
                 )

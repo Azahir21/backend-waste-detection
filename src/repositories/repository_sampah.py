@@ -177,6 +177,7 @@ class SampahRepository:
                             sampah_items=sampah_items_list,
                             count_items=count_objects,
                             image=sampah.imagePath,
+                            evidence=sampah.evidencePath,
                         )
                     )
             return data
@@ -222,6 +223,7 @@ class SampahRepository:
                 sampah_items=sampah_items_list,
                 count_items=count_objects,
                 image=sampah.imagePath,
+                evidence=sampah.evidencePath,
             )
         except SQLAlchemyError:
             raise HTTPException(status_code=500, detail=self.DATABASE_ERROR_MESSAGE)
@@ -302,6 +304,7 @@ class SampahRepository:
                             sampah_items=sampah_items_list,
                             count_items=count_objects,
                             image=sampah.imagePath,
+                            evidence=sampah.evidencePath,
                         )
                     )
             print(len(data))
